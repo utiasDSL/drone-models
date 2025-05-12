@@ -10,49 +10,37 @@ import lsy_models.utils.rotation as R
 from lsy_models.utils.constants import Constants
 
 # States
-px = cs.MX.sym("px")
-py = cs.MX.sym("py")
-pz = cs.MX.sym("pz")
+px, py, pz = cs.MX.sym("px"), cs.MX.sym("py"), cs.MX.sym("pz")
 pos = cs.vertcat(px, py, pz)  # Position
-vx = cs.MX.sym("vx")
-vy = cs.MX.sym("vy")
-vz = cs.MX.sym("vz")
+vx, vy, vz = cs.MX.sym("vx"), cs.MX.sym("vy"), cs.MX.sym("vz")
 vel = cs.vertcat(vx, vy, vz)  # Velocity
-qw = cs.MX.sym("qw")
-qx = cs.MX.sym("qx")
-qy = cs.MX.sym("qy")
-qz = cs.MX.sym("qz")
+qw, qx, qy, qz = cs.MX.sym("qw"), cs.MX.sym("qx"), cs.MX.sym("qy"), cs.MX.sym("qz")
 quat = cs.vertcat(qx, qy, qz, qw)  # Quaternions
 rot = R.cs_quat2matrix(quat)  # Rotation matrix from body to world frame
-p = cs.MX.sym("p")
-q = cs.MX.sym("q")
-r = cs.MX.sym("r")
+p, q, r = cs.MX.sym("p"), cs.MX.sym("q"), cs.MX.sym("r")
 ang_vel = cs.vertcat(p, q, r)  # Angular velocity
-f1 = cs.MX.sym("f1")
-f2 = cs.MX.sym("f2")
-f3 = cs.MX.sym("f3")
-f4 = cs.MX.sym("f4")
+f1, f2, f3, f4 = cs.MX.sym("f1"), cs.MX.sym("f2"), cs.MX.sym("f3"), cs.MX.sym("f4")
 forces_motor = cs.vertcat(f1, f2, f3, f4)  # Motor thrust
-fx = cs.MX.sym("fx")
-fy = cs.MX.sym("fy")
-fz = cs.MX.sym("fz")
+fx, fy, fz = cs.MX.sym("fx"), cs.MX.sym("fy"), cs.MX.sym("fz")
 forces_dist = cs.vertcat(fx, fy, fz)  # Disturbance forces
-tx = cs.MX.sym("tx")
-ty = cs.MX.sym("ty")
-tz = cs.MX.sym("tz")
+tx, ty, tz = cs.MX.sym("tx"), cs.MX.sym("ty"), cs.MX.sym("tz")
 torques_dist = cs.vertcat(tx, ty, tz)  # Disturbance torques
 
 # Inputs
-f1_cmd = cs.MX.sym("f1_cmd")
-f2_cmd = cs.MX.sym("f2_cmd")
-f3_cmd = cs.MX.sym("f3_cmd")
-f4_cmd = cs.MX.sym("f4_cmd")
-force_cmd = cs.vertcat(f1_cmd, f2_cmd, f3_cmd, f4_cmd)
-roll_cmd = cs.MX.sym("roll_cmd")
-pitch_cmd = cs.MX.sym("pitch_cmd")
-yaw_cmd = cs.MX.sym("yaw_cmd")
-thrust_cmd = cs.MX.sym("thrust_cmd")
-rpyt_cmd = cs.vertcat(roll_cmd, pitch_cmd, yaw_cmd, thrust_cmd)
+cmd_f1, cmd_f2, cmd_f3, cmd_f4 = (
+    cs.MX.sym("cmd_f1"),
+    cs.MX.sym("cmd_f2"),
+    cs.MX.sym("cmd_f3"),
+    cs.MX.sym("cmd_f4"),
+)
+cmd_force = cs.vertcat(cmd_f1, cmd_f2, cmd_f3, cmd_f4)
+cmd_roll, cmd_pitch, cmd_yaw = (
+    cs.MX.sym("cmd_roll"),
+    cs.MX.sym("cmd_pitch"),
+    cs.MX.sym("cmd_yaw"),
+)
+cmd_thrust = cs.MX.sym("cmd_thrust")
+cmd_rpyt = cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw, cmd_thrust)
 
 
 def first_principles(
@@ -70,7 +58,7 @@ def first_principles(
         X = cs.vertcat(X, forces_dist)
     if calc_torques_dist:
         X = cs.vertcat(X, torques_dist)
-    U = cs.vertcat(f1_cmd, f2_cmd, f3_cmd, f4_cmd)
+    U = cs.vertcat(cmd_f1, cmd_f2, cmd_f3, cmd_f4)
 
     # Defining the dynamics function
     if calc_forces_motor:
@@ -102,7 +90,9 @@ def first_principles(
     # Rotational equation of motion
     xi = cs.vertcat(cs.horzcat(0, -ang_vel.T), cs.horzcat(ang_vel, -cs.skew(ang_vel)))
     quat_dot = 0.5 * (xi @ quat)
-    ang_vel_dot = constants.J_INV @ (torques_motor_vec - cs.cross(ang_vel, constants.J @ ang_vel))
+    ang_vel_dot = constants.J_INV @ (
+        torques_motor_vec - cs.cross(ang_vel, constants.J @ ang_vel)
+    )
     if calc_torques_dist:
         # adding torque disturbances to the state
         # angular acceleration can be converted to total torque
@@ -149,21 +139,25 @@ def f_fitted_DI_rpyt_core(
         X = cs.vertcat(X, forces_dist)
     if calc_torques_dist:
         X = cs.vertcat(X, torques_dist)
-    U = cs.vertcat(roll_cmd, pitch_cmd, yaw_cmd, thrust_cmd)
+    U = cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw, cmd_thrust)
 
     # Defining the dynamics function
     if calc_forces_motor:
         # Note: Due to the structure of the integrator, we split the commanded thrust into
         # four equal parts and later apply the sum as total thrust again. Those four forces
         # are not the true forces of the motors, but the sum is the true total thrust.
-        forces_motor_dot = 1 / constants.DI_D_ACC[2] * (thrust_cmd / 4 - forces_motor)
+        forces_motor_dot = 1 / constants.DI_D_ACC[2] * (cmd_thrust / 4 - forces_motor)
         thrust = cs.sum1(forces_motor)
         # Creating force vector
-        forces_motor_vec = cs.vertcat(0, 0, constants.DI_D_ACC[0] + constants.DI_D_ACC[1] * thrust)
+        forces_motor_vec = cs.vertcat(
+            0, 0, constants.DI_D_ACC[0] + constants.DI_D_ACC[1] * thrust
+        )
     else:
-        thrust = thrust_cmd
+        thrust = cmd_thrust
         # Creating force vector
-        forces_motor_vec = cs.vertcat(0, 0, constants.DI_ACC[0] + constants.DI_ACC[1] * thrust)
+        forces_motor_vec = cs.vertcat(
+            0, 0, constants.DI_ACC[0] + constants.DI_ACC[1] * thrust
+        )
 
     # Linear equation of motion
     pos_dot = vel
@@ -182,13 +176,13 @@ def f_fitted_DI_rpyt_core(
         rpy_rates_dot = (
             constants.DI_D_PARAMS[:, 0] * euler_angles
             + constants.DI_D_PARAMS[:, 1] * rpy_rates
-            + constants.DI_D_PARAMS[:, 2] * cs.vertcat(roll_cmd, pitch_cmd, yaw_cmd)
+            + constants.DI_D_PARAMS[:, 2] * cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw)
         )
     else:
         rpy_rates_dot = (
             constants.DI_PARAMS[:, 0] * euler_angles
             + constants.DI_PARAMS[:, 1] * rpy_rates
-            + constants.DI_PARAMS[:, 2] * cs.vertcat(roll_cmd, pitch_cmd, yaw_cmd)
+            + constants.DI_PARAMS[:, 2] * cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw)
         )
     ang_vel_dot = R.cs_rpy_rates_deriv2ang_vel_deriv(quat, rpy_rates, rpy_rates_dot)
     if calc_torques_dist:

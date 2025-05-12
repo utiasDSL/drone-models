@@ -78,7 +78,10 @@ class Constants:
         # read in all parameters from xml
         params = ET.parse(drone_path).findall(".//custom/numeric")
         # create a dict from parameters containing array of floats
-        params = {p.get("name"): np.array(list(map(float, p.get("data").split()))) for p in params}
+        params = {
+            p.get("name"): np.array(list(map(float, p.get("data").split())))
+            for p in params
+        }
 
         GRAVITY = params["gravity"][0]
         GRAVITY_VEC = np.array([0, 0, -GRAVITY])
