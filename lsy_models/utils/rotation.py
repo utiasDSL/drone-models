@@ -56,6 +56,29 @@ def from_matrix(matrix: Array) -> R:
         return R.from_matrix(matrix)
 
 
+def quat_mult(q1: Array, q2: Array) -> Array:
+    """TODO remove and use scipy implementation."""
+    xp = q1.__array_namespace__()
+    cross = xp.linalg.cross(q1[..., :3], q2[..., :3])
+    qx = q1[..., 3] * q2[..., 0] + q2[..., 3] * q1[..., 0] + cross[..., 0]
+    qy = q1[..., 3] * q2[..., 1] + q2[..., 3] * q1[..., 1] + cross[..., 1]
+    qz = q1[..., 3] * q2[..., 2] + q2[..., 3] * q1[..., 2] + cross[..., 2]
+    qw = (
+        q1[..., 3] * q2[..., 3]
+        - q1[..., 0] * q2[..., 0]
+        - q1[..., 1] * q2[..., 1]
+        - q1[..., 2] * q2[..., 2]
+    )
+    quat = xp.stack([qx, qy, qz, qw], axis=-1)
+    return quat
+
+
+def quat_conj(q: Array) -> Array:
+    """TODO remove and use scipy implementation."""
+    xp = q.__array_namespace__()
+    return xp.concat([-q[..., :3], q[..., 3:]], axis=-1)
+
+
 def ang_vel2rpy_rates(quat: Array, ang_vel: Array) -> Array:
     """Convert angular velocity to rpy rates with batch support."""
     xp = quat.__array_namespace__()
