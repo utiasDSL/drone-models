@@ -116,7 +116,7 @@
     <numeric name="DI_DD_roll" data="-257.2 -20.2 207.1" />
     <numeric name="DI_DD_pitch" data="-257.2 -20.2 207.1" />
     <numeric name="DI_DD_yaw" data="-225.3 -28.61 392.7" /> 
-    <numeric name="DI_DD_acc" data="1.0591 0.1108 -0.0207 0.0021" /> <!--c1, tau, c2, c3-->
+    <numeric name="DI_DD_acc" data="1.0627 0.1891 -0.0177 0.0010" /> <!--c1, tau, c2, c3-->
 
   </custom>
 

@@ -284,9 +284,9 @@ def f_fitted_DI_DD_rpyt(
         # Note: Due to the structure of the integrator, we split the commanded thrust into
         # four equal parts and later apply the sum as total thrust again. Those four forces
         # are not the true forces of the motors, but the sum is the true total thrust.
-        forces_motor_dot = 1 / constants.DI_D_ACC[1] * (cmd_f[..., None] / 4 - forces_motor)
+        forces_motor_dot = 1 / constants.DI_DD_ACC[1] * (cmd_f[..., None] / 4 - forces_motor)
         forces_sum = xp.sum(forces_motor, axis=-1)
-        thrust = constants.DI_D_ACC[0] * forces_sum
+        thrust = constants.DI_DD_ACC[0] * forces_sum
 
     drone_z_axis = rot.inv().as_matrix()[..., -1, :]
 
@@ -294,26 +294,19 @@ def f_fitted_DI_DD_rpyt(
     vel_dot = (
         1 / constants.MASS * thrust[..., None] * drone_z_axis
         + constants.GRAVITY_VEC
-        + constants.DI_DD_ACC[2] * vel
-        + constants.DI_DD_ACC[3] * vel * xp.abs(vel)
+        + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
+        + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * xp.abs(vel)
     )
     if forces_dist is not None:
         vel_dot = vel_dot + forces_dist / constants.MASS
 
     # Rotational equation of motion
     quat_dot = quat_dot_from_ang_vel(quat, ang_vel)
-    if forces_motor is None:
-        rpy_rates_dot = (
-            constants.DI_PARAMS[:, 0] * euler_angles
-            + constants.DI_PARAMS[:, 1] * rpy_rates
-            + constants.DI_PARAMS[:, 2] * cmd_rpy
-        )
-    else:
-        rpy_rates_dot = (
-            constants.DI_D_PARAMS[:, 0] * euler_angles
-            + constants.DI_D_PARAMS[:, 1] * rpy_rates
-            + constants.DI_D_PARAMS[:, 2] * cmd_rpy
-        )
+    rpy_rates_dot = (
+        constants.DI_DD_PARAMS[:, 0] * euler_angles
+        + constants.DI_DD_PARAMS[:, 1] * rpy_rates
+        + constants.DI_DD_PARAMS[:, 2] * cmd_rpy
+    )
     ang_vel_dot = R.rpy_rates2ang_vel(quat, rpy_rates_dot)
     if torques_dist is not None:
         # adding disturbances to the state
