@@ -136,7 +136,7 @@ def dynamic_numeric_from_symbolic(
             raise ValueError(f"Model '{model}' is not supported")
 
 
-def observation_function(
+def observation_function_pose(
     pos: Array,
     quat: Array,
     vel: Array,
@@ -155,4 +155,20 @@ def observation_function(
     return xp.concat((pos, quat), axis=-1)
 
 
-# TODO method for a casadi optimizer object
+def observation_function_pose_twist(
+    pos: Array,
+    quat: Array,
+    vel: Array,
+    ang_vel: Array,
+    command: Array,
+    forces_motor: Array | None = None,
+    forces_dist: Array | None = None,
+    torques_dist: Array | None = None,
+) -> Array:
+    """Return the observable part of the state.
+
+    This is basically not necessary, since we always get position and orientation
+    from Vicon. However, for sake of completeness, this observation function is added.
+    """
+    xp = pos.__array_namespace__()
+    return xp.concat((pos, quat, vel, ang_vel), axis=-1)

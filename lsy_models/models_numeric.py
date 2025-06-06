@@ -20,25 +20,6 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-def quat_dot_from_ang_vel(quat: Array, ang_vel: Array) -> Array:
-    """Calculates the quaternion derivative based on an angular velocity."""
-    xp = quat.__array_namespace__()
-    x, y, z = xp.split(ang_vel, 3, axis=-1)
-    ang_vel_skew = xp.stack(
-        [
-            xp.concat((xp.zeros_like(x), -z, y), axis=-1),
-            xp.concat((z, xp.zeros_like(x), -x), axis=-1),
-            xp.concat((-y, x, xp.zeros_like(x)), axis=-1),
-        ],
-        axis=-2,
-    )
-    xi1 = xp.insert(-ang_vel, 0, 0, axis=-1)  # First line of xi
-    xi2 = xp.concat((xp.expand_dims(ang_vel.T, axis=0).T, -ang_vel_skew), axis=-1)
-    xi = xp.concat((xp.expand_dims(xi1, axis=-2), xi2), axis=-2)
-    return 0.5 * xp.matvec(xi, quat)
-    # return 0.5 * (xi @ quat[..., None]).squeeze(axis=-1)
-
-
 def f_first_principles(
     pos: Array,
     quat: Array,
@@ -104,7 +85,7 @@ def f_first_principles(
     if torques_dist is not None:
         # paper: rot.as_matrix() @ torques_dist
         torques = torques + rot.apply(torques_dist)
-    quat_dot = quat_dot_from_ang_vel(quat, ang_vel)
+    quat_dot = R.quat_dot_from_ang_vel(quat, ang_vel)
     ang_vel_dot = xp.matvec(
         constants.J_INV, torques - xp.cross(ang_vel, xp.matvec(constants.J, ang_vel))
     )
@@ -214,7 +195,7 @@ def f_fitted_DI_rpyt_core(
         vel_dot = vel_dot + forces_dist / constants.MASS
 
     # Rotational equation of motion
-    quat_dot = quat_dot_from_ang_vel(quat, ang_vel)
+    quat_dot = R.quat_dot_from_ang_vel(quat, ang_vel)
     if forces_motor is None:
         rpy_rates_dot = (
             constants.DI_PARAMS[:, 0] * euler_angles
@@ -301,13 +282,13 @@ def f_fitted_DI_DD_rpyt(
         vel_dot = vel_dot + forces_dist / constants.MASS
 
     # Rotational equation of motion
-    quat_dot = quat_dot_from_ang_vel(quat, ang_vel)
+    quat_dot = R.quat_dot_from_ang_vel(quat, ang_vel)
     rpy_rates_dot = (
         constants.DI_DD_PARAMS[:, 0] * euler_angles
         + constants.DI_DD_PARAMS[:, 1] * rpy_rates
         + constants.DI_DD_PARAMS[:, 2] * cmd_rpy
     )
-    ang_vel_dot = R.rpy_rates2ang_vel(quat, rpy_rates_dot)
+    ang_vel_dot = R.rpy_rates_deriv2ang_vel_deriv(quat, rpy_rates, rpy_rates_dot)
     if torques_dist is not None:
         # adding disturbances to the state
         # adding torque is a little more complex:

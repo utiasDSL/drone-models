@@ -79,6 +79,24 @@ def quat_conj(q: Array) -> Array:
     return xp.concat([-q[..., :3], q[..., 3:]], axis=-1)
 
 
+def quat_dot_from_ang_vel(quat: Array, ang_vel: Array) -> Array:
+    """Calculates the quaternion derivative based on an angular velocity."""
+    xp = quat.__array_namespace__()
+    x, y, z = xp.split(ang_vel, 3, axis=-1)
+    ang_vel_skew = xp.stack(
+        [
+            xp.concat((xp.zeros_like(x), -z, y), axis=-1),
+            xp.concat((z, xp.zeros_like(x), -x), axis=-1),
+            xp.concat((-y, x, xp.zeros_like(x)), axis=-1),
+        ],
+        axis=-2,
+    )
+    xi1 = xp.insert(-ang_vel, 0, 0, axis=-1)  # First line of xi
+    xi2 = xp.concat((xp.expand_dims(ang_vel.T, axis=0).T, -ang_vel_skew), axis=-1)
+    xi = xp.concat((xp.expand_dims(xi1, axis=-2), xi2), axis=-2)
+    return 0.5 * xp.matvec(xi, quat)
+
+
 def ang_vel2rpy_rates(quat: Array, ang_vel: Array) -> Array:
     """Convert angular velocity to rpy rates with batch support."""
     xp = quat.__array_namespace__()
