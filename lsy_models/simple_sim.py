@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
-from lsy_models.simple_model import DroneModel, thrust_dynamics
+from lsy_models.simple_model import DroneModel, thrust_dynamics, no_yaw
 from lsy_models.simple_figure_eight import generate_figure_eight_trajectory
 from lsy_models.lqr import design_lqr_controller
 
@@ -33,23 +33,30 @@ def main():
     # State penalty matrix
     if thrust_dynamics:
         Q = np.diag([
-            10.0, 10.0,  # x, x_dot
-            10.0, 10.0,  # y, y_dot
-            20.0, 20.0,  # z, z_dot
-            2.0, 2.0, 2.0,   # phi, theta, psi
-            0.5, 0.5, 0.5,   # phi_dot, theta_dot, psi_dot
-            1.0              # forces_motor
+            10.0, 10.0, 20.0,   
+            1.0, 1.0, 2.0,
+            1.0, 1.0, 1.0,   
+            0.5, 0.5, 0.5,   
+            1.0             
         ])
     else:
         Q = np.diag([
-            10.0, 10.0,  # x, x_dot
-            10.0, 10.0,  # y, y_dot
-            20.0, 20.0,  # z, z_dot
-            2.0, 2.0, 2.0,   # phi, theta, psi
-            0.5, 0.5, 0.5    # phi_dot, theta_dot, psi_dot
+            10.0, 10.0, 20.0,   
+            1.0, 1.0, 2.0,
+            1.0, 1.0, 1.0,   
+            0.5, 0.5, 0.5,   
+        ])
+    if no_yaw:
+        Q = np.diag([
+            10.0, 10.0, 20.0,   
+            1.0, 1.0,
+            1.0, 1.0, 2.0,   
+            0.5, 0.5,     
         ])
     # Control penalty matrix
     R = np.diag([0.5, 0.5, 0.5, 0.5])  # RPYT
+    if no_yaw:
+        R = np.diag([0.5, 0.5, 0.5])
 
     # Create LQR controller
     lqr_controller = design_lqr_controller(A, B, Q, R, dt)
@@ -155,6 +162,7 @@ def _plot_results(t_vec, X_sim, X_ref, U_sim, drone):
     axs[-1].set_xlabel('Time (s)')
     plt.tight_layout(rect=[0, 0, 1, 0.96])
     plt.savefig('lqr_figure_eight_inputs.png')
+    # plt.show()
 
 
 if __name__ == '__main__':
