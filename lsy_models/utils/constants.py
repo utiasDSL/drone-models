@@ -36,6 +36,8 @@ class Constants:
     THRUST_MIN: float
     THRUST_MAX: float
     THRUST_TAU: float
+    VMOTOR2THRUST: Array
+    VMOTOR2RPM: Array
 
     # System Identification (SI) parameters
     SI_ROLL: Array
@@ -78,10 +80,7 @@ class Constants:
         # read in all parameters from xml
         params = ET.parse(drone_path).findall(".//custom/numeric")
         # create a dict from parameters containing array of floats
-        params = {
-            p.get("name"): np.array(list(map(float, p.get("data").split())))
-            for p in params
-        }
+        params = {p.get("name"): np.array(list(map(float, p.get("data").split()))) for p in params}
 
         GRAVITY = params["gravity"][0]
         GRAVITY_VEC = np.array([0, 0, -GRAVITY])
@@ -98,6 +97,8 @@ class Constants:
         THRUST_MIN = params["THRUST_MIN"][0]
         THRUST_MAX = params["THRUST_MAX"][0]
         THRUST_TAU = params["THRUST_TAU"][0]
+        VMOTOR2THRUST = params["p_vmotor2thrust"]
+        VMOTOR2RPM = params["p_vmotor2rpm"]
 
         # System Identification (SI) parameters
         SI_ROLL = params["SI_roll"]
@@ -140,6 +141,8 @@ class Constants:
             THRUST_MIN,
             THRUST_MAX,
             THRUST_TAU,
+            VMOTOR2THRUST,
+            VMOTOR2RPM,
             SI_ROLL,
             SI_PITCH,
             SI_YAW,
