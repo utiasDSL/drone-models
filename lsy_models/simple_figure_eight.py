@@ -2,6 +2,8 @@ import numpy as np
 
 def generate_figure_eight_trajectory(t_vec, drone, traj_period=25.0, scaling=1., z_height=1.0):
     """Generate a figure-eight trajectory for the 13-state drone model."""
+    nx = drone.n_states
+    
     traj_freq = 2.0 * np.pi / traj_period
     
     x_ref = scaling * np.sin(traj_freq * t_vec)
@@ -18,9 +20,16 @@ def generate_figure_eight_trajectory(t_vec, drone, traj_period=25.0, scaling=1.,
     # Equilibrium motor force for hovering
     forces_motor_ref = np.full_like(t_vec, drone.GRAVITY_ACC * drone.MASS)
 
-    X_ref = np.vstack([
-        x_ref, x_dot_ref, y_ref, y_dot_ref, z_ref, z_dot_ref,
-        phi_ref, theta_ref, psi_ref, phi_dot_ref, theta_dot_ref, psi_dot_ref,
-        forces_motor_ref
-    ])
+    if nx == 13:
+        X_ref = np.vstack([
+            x_ref, x_dot_ref, y_ref, y_dot_ref, z_ref, z_dot_ref,
+            phi_ref, theta_ref, psi_ref, phi_dot_ref, theta_dot_ref, psi_dot_ref,
+            forces_motor_ref
+        ])
+    elif nx == 12:
+        X_ref = np.vstack([
+            x_ref, x_dot_ref, y_ref, y_dot_ref, z_ref, z_dot_ref,
+            phi_ref, theta_ref, psi_ref, phi_dot_ref, theta_dot_ref, psi_dot_ref
+        ])
+
     return X_ref

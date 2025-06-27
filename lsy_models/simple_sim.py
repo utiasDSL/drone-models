@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.linalg
-from lsy_models.simple_model import DroneModel
+from lsy_models.simple_model import DroneModel, thrust_dynamics
 from lsy_models.simple_figure_eight import generate_figure_eight_trajectory
 from lsy_models.lqr import design_lqr_controller
 
@@ -16,7 +16,8 @@ def main():
     x_eq = np.zeros(drone.n_states)
     
     forces_motor_eq = drone.GRAVITY_ACC * drone.MASS
-    x_eq[12] = forces_motor_eq
+    if thrust_dynamics:
+        x_eq[12] = forces_motor_eq
 
     u_eq = np.zeros(drone.n_controls)
     u_eq[-1] = forces_motor_eq
@@ -30,14 +31,23 @@ def main():
     dt = 1/60
 
     # State penalty matrix
-    Q = np.diag([
-        10.0, 10.0,  # x, x_dot
-        10.0, 10.0,  # y, y_dot
-        20.0, 20.0,  # z, z_dot
-        2.0, 2.0, 2.0,   # phi, theta, psi
-        0.5, 0.5, 0.5,   # phi_dot, theta_dot, psi_dot
-        1.0              # forces_motor
-    ])
+    if thrust_dynamics:
+        Q = np.diag([
+            10.0, 10.0,  # x, x_dot
+            10.0, 10.0,  # y, y_dot
+            20.0, 20.0,  # z, z_dot
+            2.0, 2.0, 2.0,   # phi, theta, psi
+            0.5, 0.5, 0.5,   # phi_dot, theta_dot, psi_dot
+            1.0              # forces_motor
+        ])
+    else:
+        Q = np.diag([
+            10.0, 10.0,  # x, x_dot
+            10.0, 10.0,  # y, y_dot
+            20.0, 20.0,  # z, z_dot
+            2.0, 2.0, 2.0,   # phi, theta, psi
+            0.5, 0.5, 0.5    # phi_dot, theta_dot, psi_dot
+        ])
     # Control penalty matrix
     R = np.diag([0.5, 0.5, 0.5, 0.5])  # RPYT
 
@@ -56,7 +66,8 @@ def main():
     # Initial state
     x0 = np.zeros(drone.n_states)
     x0[4] = z_height # Start at the beginning of the trajectory's z height
-    x0[12] = forces_motor_eq
+    if thrust_dynamics:
+        x0[12] = forces_motor_eq
 
     # Arrays to store simulation data
     X_sim = np.zeros((drone.n_states, len(t_vec)))

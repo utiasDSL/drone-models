@@ -5,6 +5,11 @@ import scipy.linalg
 from lsy_models.utils.constants import Constants
 constants = Constants.from_config("cf2x_L250")
 
+thrust_dynamics = True
+# thrust_dynamics = False
+no_yaw = False  
+# no_yaw = True
+
 def export_quadrotor_ode_model():
     """Symbolic Quadrotor Model."""
     
@@ -26,7 +31,10 @@ def export_quadrotor_ode_model():
     thrust_cmd = cs.MX.sym("thrust_cmd")
 
     # define state and input vector
-    states = cs.vertcat(pos, rpy, vel, rpy_dot, thrust)
+    if thrust_dynamics:
+        states = cs.vertcat(pos, rpy, vel, rpy_dot, thrust)
+    else:
+        states = cs.vertcat(pos, rpy, vel, rpy_dot)
     inputs = cs.vertcat(r_cmd, p_cmd, y_cmd, thrust_cmd)
 
     # Define nonlinear system dynamics
@@ -37,13 +45,19 @@ def export_quadrotor_ode_model():
         cs.cos(roll) * cs.sin(pitch) * cs.sin(yaw) - cs.sin(roll) * cs.cos(yaw),
         cs.cos(roll) * cs.cos(pitch),
     )
-    thrust_scaled = constants.DI_DD_ACC[0] * thrust
-    vel_dot = (
-        z_axis * thrust_scaled / constants.MASS
-        + constants.GRAVITY_VEC
-        + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
-        + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * cs.fabs(vel)
-    )
+    if thrust_dynamics:
+        thrust_scaled = constants.DI_DD_ACC[0] * thrust
+        vel_dot = (
+            z_axis * thrust_scaled / constants.MASS
+            + constants.GRAVITY_VEC
+            + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
+            + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * cs.fabs(vel)
+        )
+        thrust_dot = 1 / constants.DI_DD_ACC[1] * (thrust_cmd - thrust)
+    else:
+        thrust = constants.DI_ACC[0] + constants.DI_ACC[1] * thrust_cmd
+        vel_dot = 1.0 / constants.MASS * thrust * z_axis + constants.GRAVITY_VEC
+
     rpy_rates_dot = cs.vertcat(
         constants.DI_DD_ROLL[0] * roll
         + constants.DI_DD_ROLL[1] * droll
@@ -55,8 +69,10 @@ def export_quadrotor_ode_model():
         + constants.DI_DD_YAW[1] * dyaw
         + constants.DI_DD_YAW[2] * y_cmd,
     )
-    thrust_dot = 1 / constants.DI_DD_ACC[1] * (thrust_cmd - thrust)
-    states_dot = cs.vertcat(pos_dot, rpy_dot, vel_dot, rpy_rates_dot, thrust_dot)
+    if thrust_dynamics:
+        states_dot = cs.vertcat(pos_dot, rpy_dot, vel_dot, rpy_rates_dot, thrust_dot)
+    else:
+        states_dot = cs.vertcat(pos_dot, rpy_dot, vel_dot, rpy_rates_dot)
 
     x_dot_func = cs.Function(
         "quadrotor_dynamics",
@@ -72,6 +88,7 @@ def export_quadrotor_ode_model():
 class DroneModel:
     def __init__(self):
         self.x_dot_func, state_dot, state, input = export_quadrotor_ode_model()
+        
         self.n_states = self.x_dot_func.mx_in(0).shape[0]
         self.n_controls = self.x_dot_func.mx_in(1).shape[0]
         self.GRAVITY_ACC = constants.GRAVITY
