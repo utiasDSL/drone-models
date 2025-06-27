@@ -28,7 +28,14 @@ class LQRController:
         # Solve DARE and compute feedback gain
         self.P = self._solve_dare()
         self.K = self._compute_gain()
-        
+        print("K gain matrix computed: \n{}".format(self.K))
+        # check closed-loop stability
+        eigs = np.linalg.eigvals(self.Ad - self.Bd @ self.K)
+        if np.any(np.abs(eigs) >= 1):
+            raise ValueError("Closed-loop system is unstable. Eigenvalues: {}".format(eigs))
+        else:
+            print("Closed-loop system is stable. \n Eigenvalues: {}".format(eigs))
+
     def _c2d(self, A, B, dt):
         """Convert continuous-time system to discrete-time."""
         n = A.shape[0]

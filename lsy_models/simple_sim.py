@@ -33,25 +33,25 @@ def main():
     # State penalty matrix
     if thrust_dynamics:
         Q = np.diag([
-            10.0, 10.0, 20.0,   
-            1.0, 1.0, 2.0,
-            1.0, 1.0, 1.0,   
-            0.5, 0.5, 0.5,   
+            10.0, 10.0, 20.0, # x, y , z    
+            1.0, 1.0, 2.0, # roll, pitch, yaw
+            1.0, 1.0, 1.0, # x_dot, y_dot, z_dot
+            0.5, 0.5, 0.5, # roll_dot, pitch_dot, yaw_dot
             1.0             
         ])
     else:
         Q = np.diag([
-            10.0, 10.0, 20.0,   
-            1.0, 1.0, 2.0,
-            1.0, 1.0, 1.0,   
-            0.5, 0.5, 0.5,   
+            10.0, 10.0, 20.0, # x, y , z    
+            1.0, 1.0, 2.0, # roll, pitch, yaw
+            1.0, 1.0, 1.0, # x_dot, y_dot, z_dot
+            0.5, 0.5, 0.5, # roll_dot, pitch_dot, yaw_dot
         ])
     if no_yaw:
         Q = np.diag([
-            10.0, 10.0, 20.0,   
-            1.0, 1.0,
-            1.0, 1.0, 2.0,   
-            0.5, 0.5,     
+            10.0, 10.0, 20.0, # x, y , z    
+            1.0, 1.0, # roll, pitch,
+            1.0, 1.0, 1.0, # x_dot, y_dot, z_dot
+            0.5, 0.5, # roll_dot, pitch_dot
         ])
     # Control penalty matrix
     R = np.diag([0.5, 0.5, 0.5, 0.5])  # RPYT
@@ -72,7 +72,7 @@ def main():
     # 5. Simulation
     # Initial state
     x0 = np.zeros(drone.n_states)
-    x0[4] = z_height # Start at the beginning of the trajectory's z height
+    x0[2] = z_height # Start at the beginning of the trajectory's z height
     if thrust_dynamics:
         x0[12] = forces_motor_eq
 
@@ -90,8 +90,15 @@ def main():
         # LQR control law
         u_current = lqr_controller.compute_control(x_current, x_ref, u_eq)
         
+        # clip the last action between 0.08 and 0.45 N
+        u_current = np.clip(u_current, -0.5, 0.5)  # Clip roll, pitch, yaw commands
+        u_current[-1] = np.clip(u_current[-1], 0.08, 0.45) 
+
         # Log control input
         U_sim[:, i] = u_current
+
+        # if not no_yaw:
+        #     print(f"yaw_action: {u_current[2]}, ")
 
         # Get dynamics from non-linear model
         x_dot = drone.dynamics(x_current, u_current)
@@ -111,8 +118,8 @@ def _plot_results(t_vec, X_sim, X_ref, U_sim, drone):
     # 3D trajectory plot
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(X_sim[0, :], X_sim[2, :], X_sim[4, :], label='Actual Trajectory')
-    ax.plot(X_ref[0, :], X_ref[2, :], X_ref[4, :], 'r--', label='Reference Trajectory')
+    ax.plot(X_sim[0, :], X_sim[1, :], X_sim[2, :], label='Actual Trajectory')
+    ax.plot(X_ref[0, :], X_ref[1, :], X_ref[2, :], 'r--', label='Reference Trajectory')
     ax.set_xlabel('X (m)')
     ax.set_ylabel('Y (m)')
     ax.set_zlabel('Z (m)')
@@ -126,10 +133,19 @@ def _plot_results(t_vec, X_sim, X_ref, U_sim, drone):
     fig, axs = plt.subplots(7, 2, figsize=(15, 18), sharex=True)
     fig.suptitle('State Trajectories vs. Time')
     state_labels = [
-        'x (m)', 'x_dot (m/s)', 'y (m)', 'y_dot (m/s)', 'z (m)', 'z_dot (m/s)', 
-        'phi (rad)', 'theta (rad)', 'psi (rad)', 'phi_dot (rad/s)', 'theta_dot (rad/s)', 
-        'psi_dot (rad/s)', 'motor_force (N-norm)'
+        'x (m)', 'y (m)', 'z (m)',
+        'Roll (rad)', 'Pitch (rad)', 'Yaw (rad)',
+        'x_dot (m/s)', 'y_dot (m/s)', 'z_dot (m/s)',
+        'Roll_dot (rad/s)', 'Pitch_dot (rad/s)', 'Yaw_dot (rad/s)',
+        'Motor Force (N)' 
     ]
+    if no_yaw:
+        state_labels = [
+            'x (m)', 'y (m)', 'z (m)',
+            'Roll (rad)', 'Pitch (rad)',
+            'x_dot (m/s)', 'y_dot (m/s)', 'z_dot (m/s)',
+            'Roll_dot (rad/s)', 'Pitch_dot (rad/s)'
+        ]
     for i in range(drone.n_states):
         row, col = divmod(i, 2)
         axs[row, col].plot(t_vec, X_sim[i, :], label='Actual')
@@ -154,6 +170,8 @@ def _plot_results(t_vec, X_sim, X_ref, U_sim, drone):
     fig, axs = plt.subplots(drone.n_controls, 1, figsize=(12, 10), sharex=True)
     fig.suptitle('Control Inputs vs. Time')
     control_labels = ['Roll Cmd (rad)', 'Pitch Cmd (rad)', 'Yaw Cmd (rad)', 'Thrust Cmd (Newton)']
+    if no_yaw:
+        control_labels = ['Roll Cmd (rad)', 'Pitch Cmd (rad)', 'Thrust Cmd (Newton)']
     for i in range(drone.n_controls):
         axs[i].plot(t_vec, U_sim[i, :], label=control_labels[i])
         axs[i].set_ylabel(control_labels[i])

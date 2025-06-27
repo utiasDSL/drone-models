@@ -1,14 +1,17 @@
+import sys
 import casadi as cs
 import numpy as np
 import scipy.linalg
+import pandas as pd
+import matplotlib.pyplot as plt
+np.set_printoptions(threshold=sys.maxsize)
 
 from lsy_models.utils.constants import Constants
 constants = Constants.from_config("cf2x_L250")
-
-# thrust_dynamics = True
-thrust_dynamics = False
-# no_yaw = False  
-no_yaw = True
+thrust_dynamics = True
+# thrust_dynamics = False
+no_yaw = False  
+# no_yaw = True
 assert not (no_yaw and thrust_dynamics), "Cannot have no_yaw and thrust_dynamics at the same time."
 
 def export_quadrotor_ode_model():
@@ -138,7 +141,6 @@ class DroneModel:
             print("System is controllable.")
         else:
             print("System is not controllable.")
-            # raise ValueError("The system is not controllable at the equilibrium point.")
 
         return A_lin, B_lin
 
@@ -150,6 +152,31 @@ def is_controllable(A, B):
     # Build the controllability matrix
     controllability_matrix = B
     for i in range(1, n):
-        controllability_matrix = np.hstack((controllability_matrix, np.linalg.matrix_power(A, i) @ B))
-    return np.linalg.matrix_rank(controllability_matrix) == n
+        controllability_matrix = np.hstack(
+            (controllability_matrix, np.linalg.matrix_power(A, i) @ B)
+        )
+    rankC = np.linalg.matrix_rank(controllability_matrix)
+    print(f"Controllability matrix rank: {rankC}, expected rank: {n}")
+    if rankC < n:
+        # Decompose to find uncontrollable subspace basis
+        U, S, Vt = np.linalg.svd(controllability_matrix, full_matrices=False)
+        M_u = U[:, rankC:]  # Columns forming the uncontrollable subspace
+        A_u = M_u.T @ A @ M_u
+
+        # print the index of uncontrollable directions
+        print("Uncontrollable directions (basis vectors):")
+        for i in range(M_u.shape[1]):
+            print(f"v{i+1}: {M_u[:, i]}")
+
+        # Check stability of this uncontrollable subsystem
+        eigvals_u, _ = np.linalg.eig(A_u)
+        stable_unctr = np.all(np.abs(eigvals_u) < 1)
+        if stable_unctr:
+            print("Uncontrollable subsystem is stable => system is stablizable.")
+        else:
+            print("Uncontrollable subsystem is not stable => system is not stablizable.")
+    else:
+        print("System is fully controllable => stablizable.")
+
+    return rankC == n
 

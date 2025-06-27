@@ -22,19 +22,25 @@ def generate_figure_eight_trajectory(t_vec, drone, traj_period=25.0, scaling=1.,
 
     if nx == 13:
         X_ref = np.vstack([
-            x_ref, x_dot_ref, y_ref, y_dot_ref, z_ref, z_dot_ref,
-            phi_ref, theta_ref, psi_ref, phi_dot_ref, theta_dot_ref, psi_dot_ref,
+            x_ref, y_ref, z_ref,
+            phi_ref, theta_ref, psi_ref,
+            x_dot_ref, y_dot_ref, z_dot_ref,
+            phi_dot_ref, theta_dot_ref, psi_dot_ref,
             forces_motor_ref
         ])
     elif nx == 12:
         X_ref = np.vstack([
-            x_ref, x_dot_ref, y_ref, y_dot_ref, z_ref, z_dot_ref,
-            phi_ref, theta_ref, psi_ref, phi_dot_ref, theta_dot_ref, psi_dot_ref
+            x_ref, y_ref, z_ref,
+            phi_ref, theta_ref, psi_ref,
+            x_dot_ref, y_dot_ref, z_dot_ref,
+            phi_dot_ref, theta_dot_ref, psi_dot_ref,
         ])
     elif nx == 10:
         X_ref = np.vstack([
-            x_ref, x_dot_ref, y_ref, y_dot_ref, z_ref, z_dot_ref,
-            phi_ref, theta_ref, phi_dot_ref, theta_dot_ref
+            x_ref, y_ref, z_ref,
+            phi_ref, theta_ref,
+            x_dot_ref, y_dot_ref, z_dot_ref,
+            phi_dot_ref, theta_dot_ref
         ])
 
     return X_ref
