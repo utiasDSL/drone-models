@@ -109,19 +109,9 @@ def f_fitted_DI_rpyt(
     For full description see corresponding core function.
     """
     if forces_motor is not None:
-        raise NotImplementedError(
-            "The fitted_DI_rpyt model does not support motor dynamics!"
-        )
+        raise NotImplementedError("The fitted_DI_rpyt model does not support motor dynamics!")
     return f_fitted_DI_rpyt_core(
-        pos,
-        quat,
-        vel,
-        ang_vel,
-        command,
-        constants,
-        forces_motor,
-        forces_dist,
-        torques_dist,
+        pos, quat, vel, ang_vel, command, constants, forces_motor, forces_dist, torques_dist
     )
 
 
@@ -145,15 +135,7 @@ def f_fitted_DI_D_rpyt(
             "The fitted_DI_D_rpyt model only supports motor dynamics activated! Will continue without motor dynamics"
         )
     return f_fitted_DI_rpyt_core(
-        pos,
-        quat,
-        vel,
-        ang_vel,
-        command,
-        constants,
-        forces_motor,
-        forces_dist,
-        torques_dist,
+        pos, quat, vel, ang_vel, command, constants, forces_motor, forces_dist, torques_dist
     )
 
 
@@ -200,18 +182,14 @@ def f_fitted_DI_rpyt_core(
         # Note: Due to the structure of the integrator, we split the commanded thrust into
         # four equal parts and later apply the sum as total thrust again. Those four forces
         # are not the true forces of the motors, but the sum is the true total thrust.
-        forces_motor_dot = (
-            1 / constants.DI_D_ACC[2] * (cmd_f[..., None] / 4 - forces_motor)
-        )
+        forces_motor_dot = 1 / constants.DI_D_ACC[2] * (cmd_f[..., None] / 4 - forces_motor)
         forces_sum = xp.sum(forces_motor, axis=-1)
         thrust = constants.DI_D_ACC[0] + constants.DI_D_ACC[1] * forces_sum
 
     drone_z_axis = rot.as_matrix()[..., -1]
 
     pos_dot = vel
-    vel_dot = (
-        1.0 / constants.MASS * thrust[..., None] * drone_z_axis + constants.GRAVITY_VEC
-    )
+    vel_dot = 1.0 / constants.MASS * thrust[..., None] * drone_z_axis + constants.GRAVITY_VEC
     if forces_dist is not None:
         # Adding force disturbances to the state
         vel_dot = vel_dot + forces_dist / constants.MASS
@@ -278,6 +256,7 @@ def f_fitted_DI_DD_rpyt(
     cmd_f = command[..., -1]
     cmd_rpy = command[..., 0:3]
     rot = R.from_quat(quat)
+    rot_mat = rot.as_matrix()
     euler_angles = rot.as_euler("xyz")
     rpy_rates = R.ang_vel2rpy_rates(quat, ang_vel)
 
@@ -287,20 +266,24 @@ def f_fitted_DI_DD_rpyt(
         # Note: Due to the structure of the integrator, we split the commanded thrust into
         # four equal parts and later apply the sum as total thrust again. Those four forces
         # are not the true forces of the motors, but the sum is the true total thrust.
-        forces_motor_dot = (
-            1 / constants.DI_DD_ACC[1] * (cmd_f[..., None] / 4 - forces_motor)
-        )
+        forces_motor_dot = 1 / constants.DI_DD_ACC[1] * (cmd_f[..., None] / 4 - forces_motor)
         forces_sum = xp.sum(forces_motor, axis=-1)
         thrust = constants.DI_DD_ACC[0] * forces_sum
 
-    drone_z_axis = rot.as_matrix()[..., -1]
+    drone_z_axis = rot_mat[..., -1]
 
     pos_dot = vel
     vel_dot = (
         1 / constants.MASS * thrust[..., None] * drone_z_axis
         + constants.GRAVITY_VEC
-        + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
-        + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * xp.abs(vel)
+        + 1
+        / constants.MASS
+        * rot_mat
+        @ xp.diag([constants.DI_DD_ACC[2], constants.DI_DD_ACC[2], constants.DI_DD_ACC[3]])
+        @ rot_mat.T
+        @ vel
+        # + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
+        # + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * xp.abs(vel)
     )
     if forces_dist is not None:
         vel_dot = vel_dot + forces_dist / constants.MASS
