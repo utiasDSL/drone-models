@@ -65,6 +65,7 @@ class Constants:
     DI_DD_YAW: Array
     DI_DD_PARAMS: Array
     DI_DD_ACC: Array
+    DI_DD_D: Array
 
     # Configs (used in testing)
     available_configs: tuple[str] = ("cf2x_L250", "cf2x_P250", "cf2x_T350")
@@ -125,6 +126,7 @@ class Constants:
         DI_DD_YAW = params["DI_DD_yaw"]
         DI_DD_PARAMS = np.vstack((DI_DD_ROLL, DI_DD_PITCH, DI_DD_YAW))
         DI_DD_ACC = params["DI_DD_acc"]
+        DI_DD_D = np.diag([DI_DD_ACC[2], DI_DD_ACC[2], DI_DD_ACC[3]])
 
         return cls(
             GRAVITY,
@@ -163,6 +165,7 @@ class Constants:
             DI_DD_YAW,
             DI_DD_PARAMS,
             DI_DD_ACC,
+            DI_DD_D,
         )
 
     @classmethod

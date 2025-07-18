@@ -273,15 +273,12 @@ def f_fitted_DI_DD_rpyt(
     drone_z_axis = rot_mat[..., -1]
 
     pos_dot = vel
+    vel_body = xp.matvec(xp.swapaxes(rot_mat, -1, -2), vel)  # Velocity in body frame
+    f_drag = xp.matvec(rot_mat, xp.matvec(constants.DI_DD_D, vel_body))
     vel_dot = (
         1 / constants.MASS * thrust[..., None] * drone_z_axis
         + constants.GRAVITY_VEC
-        + 1
-        / constants.MASS
-        * rot_mat
-        @ xp.diag([constants.DI_DD_ACC[2], constants.DI_DD_ACC[2], constants.DI_DD_ACC[3]])
-        @ rot_mat.T
-        @ vel
+        + 1 / constants.MASS * f_drag
         # + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
         # + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * xp.abs(vel)
     )
