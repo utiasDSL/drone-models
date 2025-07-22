@@ -65,7 +65,7 @@ class Constants:
     DI_DD_ACC: Array
 
     # Configs (used in testing)
-    available_configs: tuple[str] = ("cf2x_L250", "cf2x_P250", "cf2x_T350")
+    available_configs: tuple[str] = ("cf2x_L250", "cf2x_P250", "cf2x_T350", "cf2x_L350")
 
     @classmethod
     def from_file(cls, path: str) -> Constants:
@@ -175,5 +175,7 @@ class Constants:
                 return Constants.from_file("data/cf2x_P250.xml")
             case "cf2x_T350":
                 return Constants.from_file("data/cf2x_T350.xml")
+            case "cf2x_L350":
+                return Constants.from_file("data/cf2x_L350.xml")
             case _:
                 raise ValueError(f"Drone config '{config}' is not supported")

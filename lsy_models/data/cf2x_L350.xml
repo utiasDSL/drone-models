@@ -62,7 +62,9 @@
     <!-- Physical Parameters-->
     <numeric name="gravity" data="9.807" /> <!-- Munich, Germany-->
     <!-- From IROS 2022 -->
-    <numeric name="mass" data="0.033" />
+    <!-- <numeric name="mass" data="0.037" /> -->
+    <numeric name="mass" data="0.037" />
+    <!-- <numeric name="mass" data="0.037" /> TODO This is the wrong mass (cf with battery weighs more!) -->
     <!-- <numeric name="J" data="1.4e-5 0.0    0.0 
                             0.0    1.4e-5 0.0
                             0.0    0.0    2.17e-5"/>  -->
@@ -101,22 +103,26 @@
     <numeric name="SI_acc" data="0.1906 0.4903" /> <!--Index is order-->
 
     <!-- System Identification: Double Integrator Model-->
-    <numeric name="DI_roll" data="-286.2 -23.03 225.6" />
-    <numeric name="DI_pitch" data="-286.2 -23.03 225.6" />
-    <numeric name="DI_yaw" data="-192.9 -22.22 323.5" /> 
-    <numeric name="DI_acc" data="0.0 1.0633" /> <!--Index is order-->
+    <numeric name="DI_roll" data="-238.1 -21.35 179.65" />
+    <numeric name="DI_pitch" data="-238.1 -21.35 179.65" />
+    <numeric name="DI_yaw" data="-170.4 -22.22 280" /> 
+    <!-- <numeric name="DI_acc" data="0.187 0.47" />  -->
+    <numeric name="DI_acc" data="0.0 1.0633" /> 
+    <!--Index is order-->
 
     <!-- System Identification: Double Integrator Model with delay-->
-    <numeric name="DI_D_roll" data="-257.2 -20.2 207.1" />
-    <numeric name="DI_D_pitch" data="-257.2 -20.2 207.1" />
-    <numeric name="DI_D_yaw" data="-225.3 -28.61 392.7" /> 
-    <numeric name="DI_D_acc" data="0.0 1.0591 0.1108" /> <!--Index is order, tau is last-->
+    <numeric name="DI_D_roll" data="-238.1 -21.35 179.65" />
+    <numeric name="DI_D_pitch" data="-238.1 -21.35 179.65" />
+    <numeric name="DI_D_yaw" data="-170.4 -22.22 280" /> 
+    <!--Index is order, bias, scale, tau-->
+    <!-- <numeric name="DI_D_acc" data="-0.04 0.776 0.092" />  -->
+    <numeric name="DI_D_acc" data="0.1704 0.5210 0.0923" />
 
     <!-- System Identification: Double Integrator Model with drag and delay-->
     <numeric name="DI_DD_roll" data="-257.2 -20.2 207.1" />
     <numeric name="DI_DD_pitch" data="-257.2 -20.2 207.1" />
     <numeric name="DI_DD_yaw" data="-225.3 -28.61 392.7" /> 
-    <numeric name="DI_DD_acc" data="1.0627 0.1891 -0.0177 0.0010" /> <!--c1, tau, c2, c3-->
+    <numeric name="DI_DD_acc" data="1.0627 0.1891 -0.0177 0.0010" /> <!--c1, tau, c2, c3 -->
 
   </custom>
 
