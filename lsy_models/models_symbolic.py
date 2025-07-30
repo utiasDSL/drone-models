@@ -40,6 +40,7 @@ cmd_roll, cmd_pitch, cmd_yaw = (
     cs.MX.sym("cmd_yaw"),
 )
 cmd_thrust = cs.MX.sym("cmd_thrust")
+# Input order: [Roll, Pitch, Yaw, Thrust] as requested by user
 cmd_rpyt = cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw, cmd_thrust)
 
 
@@ -200,4 +201,120 @@ def f_fitted_DI_rpyt_core(
         X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot)
     Y = cs.vertcat(pos, quat)
 
+    return X_dot, X, U, Y
+
+def three_d_attitude_delay(
+    constants: Constants,
+    calc_forces_motor: bool = True,
+    calc_forces_dist: bool = False,
+    calc_torques_dist: bool = False,
+) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
+    """Symbolic THREE_D_ATTITUDE_DELAY model for a quadrotor.
+
+    This model implements a quadrotor with attitude delay dynamics.
+    Compatible with f_fitted_DI_rpyt_core interface.
+    
+    State vector: [pos, quat, vel, ang_vel, forces_motor] (same as f_fitted_DI_rpyt_core)
+    Input vector: [cmd_roll, cmd_pitch, cmd_yaw, cmd_thrust] (same as f_fitted_DI_rpyt_core)
+    
+    Args:
+        constants: Drone constants including THREE_D_AD parameters
+        calc_forces_motor: Include motor dynamics in state (4-element motor forces)
+        calc_forces_dist: Include force disturbances  
+        calc_torques_dist: Include torque disturbances
+
+    Returns:
+        tuple: (X_dot, X, U, Y) - dynamics, states, inputs, outputs
+    """
+    # States and Inputs - same format as f_fitted_DI_rpyt_core
+    X = cs.vertcat(pos, quat, vel, ang_vel)
+    if calc_forces_motor:
+        X = cs.vertcat(X, forces_motor)
+    if calc_forces_dist:
+        X = cs.vertcat(X, forces_dist)
+    if calc_torques_dist:
+        X = cs.vertcat(X, torques_dist)
+    
+    # Input order: [Roll, Pitch, Yaw, Thrust] - same as f_fitted_DI_rpyt_core
+    U = cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw, cmd_thrust)
+    
+    # Motor dynamics - with transformation similar to original implementation
+    if calc_forces_motor:
+        # Transformation parameters from sys_id with mode 3
+        transform_params = constants.THREE_D_AD_TRANSFORM  # [cmd_min, cmd_max, f_min, f_max]
+        cmd_min, cmd_max, f_min, f_max = transform_params[0], transform_params[1], transform_params[2], transform_params[3]
+        
+        # Transform input command T from raw to normalized space (mode 3)
+        # T is expected to be in raw force units, normalize to [-1, 1]
+        dT_c = 2 * (cmd_thrust - cmd_min) / (cmd_max - cmd_min) - 1
+        
+        # For 4-element forces_motor vector - use sum as total thrust
+        total_thrust = cs.sum1(forces_motor)
+        
+        # normalized forces_motor 
+        df = 2 * (total_thrust - f_min) / (f_max - f_min) - 1
+        
+        # Delay dynamics parameters: [bias, scale, tau]
+        params_acc = constants.THREE_D_AD_ACC  # [-0.04, 0.776, 0.092]
+        
+        # Delay dynamics in normalized space: df_dot = (scale * (dT + bias) - df) / tau
+        df_dot = (params_acc[1] * (dT_c + params_acc[0]) - df) / params_acc[2]
+        
+        # By definition, motor_forces_dot = 1/2 * df_dot
+        # For 4-element forces_motor, split the change evenly
+        forces_motor_dot = cs.vertcat(0.5 * df_dot / 4, 0.5 * df_dot / 4, 0.5 * df_dot / 4, 0.5 * df_dot / 4)
+        
+        thrust = total_thrust
+        # Creating force vector with acceleration transformation
+        forces_motor_vec = cs.vertcat(
+            0, 0, constants.THREE_D_AD_ACC[0] + constants.THREE_D_AD_ACC[1] * thrust
+        )
+    else:
+        thrust = cmd_thrust
+        # Creating force vector with acceleration transformation
+        forces_motor_vec = cs.vertcat(
+            0, 0, constants.THREE_D_AD_ACC[0] + constants.THREE_D_AD_ACC[1] * thrust
+        )
+
+    # Position dynamics  
+    pos_dot = vel
+    
+    # Force dynamics - use quaternion rotation (same as f_fitted_DI_rpyt_core)
+    vel_dot = rot @ forces_motor_vec / constants.MASS + constants.GRAVITY_VEC
+    
+    if calc_forces_dist:
+        vel_dot = vel_dot + forces_dist / constants.MASS
+    
+    # Rotational equation of motion - convert quaternion to Euler for THREE_D_AD dynamics
+    euler_angles = R.cs_quat2euler(quat)
+
+    xi = cs.vertcat(cs.horzcat(0, -ang_vel.T), cs.horzcat(ang_vel, -cs.skew(ang_vel)))
+    quat_dot = 0.5 * (xi @ quat)
+    rpy_rates = R.cs_ang_vel2rpy_rates(quat, ang_vel)
+    
+    # Attitude control dynamics using THREE_D_AD parameters (instead of DI_D_PARAMS)
+    rpy_rates_dot = (
+        constants.THREE_D_AD_PARAMS[:, 0] * euler_angles
+        + constants.THREE_D_AD_PARAMS[:, 1] * rpy_rates
+        + constants.THREE_D_AD_PARAMS[:, 2] * cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw)
+    )
+    ang_vel_dot = R.cs_rpy_rates_deriv2ang_vel_deriv(quat, rpy_rates, rpy_rates_dot)
+    
+    if calc_torques_dist:
+        # adding torque disturbances to the state
+        # angular acceleration can be converted to total torque
+        torque = constants.J @ ang_vel_dot - cs.cross(ang_vel, constants.J @ ang_vel)
+        # adding torque
+        torque = torque + torques_dist
+        # back to angular acceleration
+        ang_vel_dot = constants.J_INV @ torque
+
+    if calc_forces_motor:
+        X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot, forces_motor_dot)
+    else:
+        X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot)
+    
+    # Output (same format as f_fitted_DI_rpyt_core)
+    Y = cs.vertcat(pos, quat)
+    
     return X_dot, X, U, Y

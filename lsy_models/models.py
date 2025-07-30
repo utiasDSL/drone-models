@@ -30,6 +30,7 @@ available_models = {
     "first_principles": [True, True, True],
     "fitted_DI_rpyt": [False, True, True],
     "fitted_DI_D_rpyt": [True, True, True],
+    "three_d_attitude_delay": [True, True, True],
 }
 #  TODO "mellinger_rpyt",
 
@@ -99,6 +100,8 @@ def dynamics_numeric(
             return partial(models_numeric.f_fitted_DI_D_rpyt, constants=constants)
         case "fitted_DI_DD_rpyt":
             return partial(models_numeric.f_fitted_DI_DD_rpyt, constants=constants)
+        case "three_d_attitude_delay":
+            return partial(models_numeric.f_three_d_attitude_delay, constants=constants)
         case _:
             raise ValueError(f"Model '{model}' is not supported")
 
@@ -132,6 +135,9 @@ def dynamic_numeric_from_symbolic(
         case "fitted_DI_D_rpyt":
             X_dot, X, U, _ = models_symbolic.f_fitted_DI_D_rpyt(constants)
             return cs.Function("fitted_DI_D_rpyt", [X, U], [X_dot])
+        case "three_d_attitude_delay":
+            X_dot, X, U, _ = models_symbolic.three_d_attitude_delay(constants)
+            return cs.Function("three_d_attitude_delay", [X, U], [X_dot])
         case _:
             raise ValueError(f"Model '{model}' is not supported")
 
