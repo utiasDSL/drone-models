@@ -267,7 +267,7 @@ def three_d_attitude_delay(
         thrust = total_thrust
         # Creating force vector with acceleration transformation
         forces_motor_vec = cs.vertcat(
-            0, 0, constants.THREE_D_AD_ACC[0] + constants.THREE_D_AD_ACC[1] * thrust
+            0, 0, thrust
         )
     else:
         thrust = cmd_thrust

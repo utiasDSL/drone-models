@@ -325,7 +325,7 @@ def f_three_d_attitude_delay(
             forces_motor_dot = 0.5 * df_dot
         
         # Use total thrust for physics calculations with acceleration transformation
-        thrust = constants.THREE_D_AD_ACC[0] + constants.THREE_D_AD_ACC[1] * total_thrust
+        thrust = total_thrust
     
     # Position dynamics
     pos_dot = vel
