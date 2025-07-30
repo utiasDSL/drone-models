@@ -64,6 +64,14 @@ class Constants:
     DI_DD_PARAMS: Array
     DI_DD_ACC: Array
 
+    # System Identification parameters for THREE_D_ATTITUDE_DELAY model
+    THREE_D_AD_ROLL: Array
+    THREE_D_AD_PITCH: Array
+    THREE_D_AD_YAW: Array
+    THREE_D_AD_PARAMS: Array
+    THREE_D_AD_ACC: Array
+    THREE_D_AD_TRANSFORM: Array  # [cmd_min, cmd_max, f_min, f_max]
+
     # Configs (used in testing)
     available_configs: tuple[str] = ("cf2x_L250", "cf2x_P250", "cf2x_T350", "cf2x_L350")
 
@@ -125,6 +133,14 @@ class Constants:
         DI_DD_PARAMS = np.vstack((DI_DD_ROLL, DI_DD_PITCH, DI_DD_YAW))
         DI_DD_ACC = params["DI_DD_acc"]
 
+        # THREE_D_ATTITUDE_DELAY parameters (using defaults if not in XML)
+        THREE_D_AD_ROLL = params.get("THREE_D_AD_roll", np.array([-238.1, -21.35, 179.65]))
+        THREE_D_AD_PITCH = params.get("THREE_D_AD_pitch", np.array([-238.1, -21.35, 179.65]))  
+        THREE_D_AD_YAW = params.get("THREE_D_AD_yaw", np.array([-170.4, -22.22, 280]))
+        THREE_D_AD_PARAMS = np.vstack((THREE_D_AD_ROLL, THREE_D_AD_PITCH, THREE_D_AD_YAW))
+        THREE_D_AD_ACC = params.get("THREE_D_AD_acc", np.array([-0.04, 0.776, 0.092]))
+        THREE_D_AD_TRANSFORM = params.get("THREE_D_AD_transform", np.array([0.2523, 0.4530, 0.2890, 0.4236]))
+
         return cls(
             GRAVITY,
             GRAVITY_VEC,
@@ -160,6 +176,12 @@ class Constants:
             DI_DD_YAW,
             DI_DD_PARAMS,
             DI_DD_ACC,
+            THREE_D_AD_ROLL,
+            THREE_D_AD_PITCH,
+            THREE_D_AD_YAW,
+            THREE_D_AD_PARAMS,
+            THREE_D_AD_ACC,
+            THREE_D_AD_TRANSFORM,
         )
 
     @classmethod

@@ -7,108 +7,33 @@ import matplotlib.pyplot as plt
 np.set_printoptions(threshold=sys.maxsize)
 
 from lsy_models.utils.constants import Constants
-constants = Constants.from_config("cf2x_L250")
-thrust_dynamics = True
-# thrust_dynamics = False
-no_yaw = False  
-# no_yaw = True
-assert not (no_yaw and thrust_dynamics), "Cannot have no_yaw and thrust_dynamics at the same time."
+from lsy_models.models_symbolic import three_d_attitude_delay
+from lsy_models.models_numeric import f_three_d_attitude_delay
+constants = Constants.from_config("cf2x_L350")
+thrust_dynamics = True  # Use thrust dynamics
+no_yaw = False  # Use yaw dynamics
 
 def export_quadrotor_ode_model():
-    """Symbolic Quadrotor Model."""
+    """Symbolic Quadrotor Model using THREE_D_ATTITUDE_DELAY."""
     
-    """Model setting"""
-    # define basic variables in state and input vector
-    px, py, pz = cs.MX.sym("px"), cs.MX.sym("py"), cs.MX.sym("pz")
-    pos = cs.vertcat(px, py, pz)  # Position
-    vx, vy, vz = cs.MX.sym("vx"), cs.MX.sym("vy"), cs.MX.sym("vz")
-    vel = cs.vertcat(vx, vy, vz)  # Velocity
-    roll, pitch, yaw = cs.MX.sym("roll"), cs.MX.sym("pitch"), cs.MX.sym("yaw")
-    rpy = cs.vertcat(roll, pitch, yaw)  # Euler angles
-    droll, dpitch, dyaw = cs.MX.sym("droll"), cs.MX.sym("dpitch"), cs.MX.sym("dyaw")
-    rpy_dot = cs.vertcat(droll, dpitch, dyaw)  # Euler angles dot
-    if no_yaw:
-        # yaw = cs.MX.sym("yaw", 0)
-        # dyaw = cs.MX.sym("dyaw", 0)
-        yaw = 0
-        dyaw = 0
-        rpy = cs.vertcat(roll, pitch)
-        rpy_dot = cs.vertcat(droll, dpitch)
-    thrust = cs.MX.sym("thrust")
-
-    r_cmd = cs.MX.sym("r_cmd")
-    p_cmd = cs.MX.sym("p_cmd")
-    y_cmd = cs.MX.sym("y_cmd")
-    thrust_cmd = cs.MX.sym("thrust_cmd")
-
-    # define state and input vector
-    if thrust_dynamics:
-        states = cs.vertcat(pos, rpy, vel, rpy_dot, thrust)
-    else:
-        states = cs.vertcat(pos, rpy, vel, rpy_dot)
-
-    inputs = cs.vertcat(r_cmd, p_cmd, y_cmd, thrust_cmd)
-    if no_yaw:
-        inputs = cs.vertcat(r_cmd, p_cmd, thrust_cmd)
-        y_cmd = 0  
-
-    # Define nonlinear system dynamics
-    pos_dot = vel
-    rpy_dot = cs.vertcat(droll, dpitch, dyaw)
-    if no_yaw:
-        rpy_dot = cs.vertcat(droll, dpitch)
-    z_axis = cs.vertcat(
-        cs.cos(roll) * cs.sin(pitch) * cs.cos(yaw) + cs.sin(roll) * cs.sin(yaw),
-        cs.cos(roll) * cs.sin(pitch) * cs.sin(yaw) - cs.sin(roll) * cs.cos(yaw),
-        cs.cos(roll) * cs.cos(pitch),
+    # Use the THREE_D_ATTITUDE_DELAY model from models_symbolic
+    X_dot, X, U, Y = three_d_attitude_delay(
+        constants=constants,
+        calc_forces_motor=True,  # Include motor dynamics (13 states)
+        calc_forces_dist=False,
+        calc_torques_dist=False
     )
-    if thrust_dynamics:
-        thrust_scaled = constants.DI_DD_ACC[0] * thrust
-        vel_dot = (
-            z_axis * thrust_scaled / constants.MASS
-            + constants.GRAVITY_VEC
-            + 1 / constants.MASS * constants.DI_DD_ACC[2] * vel
-            + 1 / constants.MASS * constants.DI_DD_ACC[3] * vel * cs.fabs(vel)
-        )
-        thrust_dot = 1 / constants.DI_DD_ACC[1] * (thrust_cmd - thrust)
-    else:
-        thrust = constants.DI_ACC[0] + constants.DI_ACC[1] * thrust_cmd
-        vel_dot = z_axis * 1.0 / constants.MASS * thrust  + constants.GRAVITY_VEC
-
-    rpy_rates_dot = cs.vertcat(
-        constants.DI_DD_ROLL[0] * roll
-        + constants.DI_DD_ROLL[1] * droll
-        + constants.DI_DD_ROLL[2] * r_cmd,
-        constants.DI_DD_PITCH[0] * pitch
-        + constants.DI_DD_PITCH[1] * dpitch
-        + constants.DI_DD_PITCH[2] * p_cmd,
-        constants.DI_DD_YAW[0] * yaw
-        + constants.DI_DD_YAW[1] * dyaw
-        + constants.DI_DD_YAW[2] * y_cmd,
-    )
-    if no_yaw:
-        rpy_rates_dot = cs.vertcat(
-            constants.DI_DD_ROLL[0] * roll
-            + constants.DI_DD_ROLL[1] * droll
-            + constants.DI_DD_ROLL[2] * r_cmd,
-            constants.DI_DD_PITCH[0] * pitch
-            + constants.DI_DD_PITCH[1] * dpitch
-            + constants.DI_DD_PITCH[2] * p_cmd,
-        )
-    if thrust_dynamics:
-        states_dot = cs.vertcat(pos_dot, rpy_dot, vel_dot, rpy_rates_dot, thrust_dot)
-    else:
-        states_dot = cs.vertcat(pos_dot, rpy_dot, vel_dot, rpy_rates_dot)
-
+    
+    # Create CasADi function
     x_dot_func = cs.Function(
         "quadrotor_dynamics",
-        [states, inputs],
-        [states_dot],
+        [X, U],
+        [X_dot],
         ["x", "u"],
         ["xdot"],
     )
-
-    return x_dot_func, states_dot, states, inputs
+    
+    return x_dot_func, X_dot, X, U
 
 
 class DroneModel:

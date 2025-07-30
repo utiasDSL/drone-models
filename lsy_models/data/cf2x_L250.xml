@@ -118,6 +118,12 @@
     <numeric name="DI_DD_yaw" data="-225.3 -28.61 392.7" /> 
     <numeric name="DI_DD_acc" data="1.0627 0.1891 -0.0177 0.0010" /> <!--c1, tau, c2, c3-->
 
+    <!-- System Identification: THREE_D_ATTITUDE_DELAY Model-->
+    <numeric name="THREE_D_AD_roll" data="-238.1 -21.35 179.65" /> <!--k_p, k_d, k_cmd for roll-->
+    <numeric name="THREE_D_AD_pitch" data="-238.1 -21.35 179.65" /> <!--k_p, k_d, k_cmd for pitch-->
+    <numeric name="THREE_D_AD_yaw" data="-170.4 -22.22 280" /> <!--k_p, k_d, k_cmd for yaw-->
+    <numeric name="THREE_D_AD_acc" data="-0.04 0.776 0.092" /> <!--bias, scale, tau for thrust dynamics-->
+    <numeric name="THREE_D_AD_transform" data="0.2523 0.4530 0.2890 0.4236" /> <!--cmd_min, cmd_max, f_min, f_max-->
   </custom>
 
 </mujoco>

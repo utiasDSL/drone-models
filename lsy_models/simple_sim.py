@@ -13,14 +13,16 @@ def main():
 
     # 2. Linearize around hover
     z_height = 1.0
-    x_eq = np.zeros(drone.n_states)
+    n_state = 13
+    n_input = 4
+    x_eq = np.zeros(n_state)
     
     forces_motor_eq = drone.GRAVITY_ACC * drone.MASS
     if thrust_dynamics:
         x_eq[12] = forces_motor_eq
 
     u_eq = np.zeros(drone.n_controls)
-    u_eq[-1] = forces_motor_eq
+    u_eq[3] = forces_motor_eq  # Thrust is now the 4th input: [R_c, P_c, Y_c, T_c]
     print(f"X_EQ: {x_eq}, U_EQ: {u_eq}")
 
     A, B = drone.linearize(x_eq, u_eq)
@@ -105,6 +107,9 @@ def main():
         
         # Integrate one step forward (Euler integration)
         X_sim[:, i+1] = x_current + dt * x_dot
+        # clip the force to make sure it is within the limits
+        if thrust_dynamics:
+            X_sim[12, i+1] = np.clip(X_sim[12, i+1], 0.08, 0.45)
 
     # Log the last control input
     U_sim[:, -1] = lqr_controller.compute_control(X_sim[:, -1], X_ref[:, -1], u_eq)
