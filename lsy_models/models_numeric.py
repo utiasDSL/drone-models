@@ -316,14 +316,14 @@ def f_three_d_attitude_delay(
         # Delay dynamics in normalized space: df_dot = (scale * (dT + bias) - df) / tau
         df_dot = (params_acc[1] * (dT_c + params_acc[0]) - df) / params_acc[2]
         
-        # By definition, motor_forces_dot = 1/2 * df_dot
+        # By definition, motor_forces_dot = (f_max - f_min)/2 * df_dot
         if forces_motor.shape[-1] == 4:
             # For 4-element forces_motor, split the change evenly
-            forces_motor_dot = xp.full_like(forces_motor, 0.5 * df_dot[..., None] / 4)
+            forces_motor_dot = xp.full_like(forces_motor, (f_max - f_min) / 2 * df_dot[..., None] / 4)
         else:
             # For single scalar
-            forces_motor_dot = 0.5 * df_dot
-        
+            forces_motor_dot = (f_max - f_min) / 2 * df_dot
+
         # Use total thrust for physics calculations with acceleration transformation
         thrust = total_thrust
     

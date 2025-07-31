@@ -115,8 +115,9 @@
     <numeric name="DI_D_pitch" data="-238.1 -21.35 179.65" />
     <numeric name="DI_D_yaw" data="-170.4 -22.22 280" /> 
     <!--Index is order, bias, scale, tau-->
-    <!-- <numeric name="DI_D_acc" data="-0.04 0.776 0.092" />  -->
-    <numeric name="DI_D_acc" data="0.1704 0.5210 0.0923" />
+    <!-- <numeric name="DI_D_acc" data="0.1404 0.5210 0.0923" /> -->
+    <numeric name="DI_D_acc" data="0 0.9901 0.1128" />
+    <!-- <numeric name="DI_D_acc" data="0.07 0.8 0.08" />  -->
 
     <!-- System Identification: Double Integrator Model with drag and delay-->
     <numeric name="DI_DD_roll" data="-257.2 -20.2 207.1" />
@@ -128,9 +129,18 @@
     <numeric name="THREE_D_AD_roll" data="-238.1 -21.35 179.65" /> <!--k_p, k_d, k_cmd for roll-->
     <numeric name="THREE_D_AD_pitch" data="-238.1 -21.35 179.65" /> <!--k_p, k_d, k_cmd for pitch-->
     <numeric name="THREE_D_AD_yaw" data="-170.4 -22.22 280" /> <!--k_p, k_d, k_cmd for yaw-->
-    <numeric name="THREE_D_AD_acc" data="-0.04 0.776 0.092" /> <!--bias, scale, tau for thrust dynamics-->
-    <numeric name="THREE_D_AD_transform" data="0.2523 0.4530 0.2890 0.4236" /> <!--cmd_min, cmd_max, f_min, f_max-->
+    <!--bias, scale, tau for thrust dynamics-->
+    <!-- <numeric name="THREE_D_AD_acc" data="-0.24 1.0648 0.12" />  -->
+    <!-- <numeric name="THREE_D_AD_acc" data="-0.1709 0.6652 0.0661" />  -->
+    <!-- <numeric name="THREE_D_AD_acc" data="-0.21 0.85 0.08" /> -->
+    <!--cmd_min, cmd_max, f_min, f_max-->
+    <!-- <numeric name="THREE_D_AD_transform" data="0.20 0.45 0.24 0.47" /> -->
 
+    <numeric name="THREE_D_AD_acc" data="0.0905 0.8 0.0814" />
+    <!--cmd_min, cmd_max, f_min, f_max-->
+    <numeric name="THREE_D_AD_transform" data="-1 1 -1 1" />  
+    <!-- <numeric name="THREE_D_AD_acc" data="-0.2039 0.8 0.076" /> -->
+    <!-- <numeric name="THREE_D_AD_transform" data="0.2012 0.4553 0.2389 0.4750" /> -->
   </custom>
 
 </mujoco>

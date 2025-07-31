@@ -260,9 +260,9 @@ def three_d_attitude_delay(
         # Delay dynamics in normalized space: df_dot = (scale * (dT + bias) - df) / tau
         df_dot = (params_acc[1] * (dT_c + params_acc[0]) - df) / params_acc[2]
         
-        # By definition, motor_forces_dot = 1/2 * df_dot
+        # By definition, motor_forces_dot = (f_max - f_min) / 2 * df_dot
         # For 4-element forces_motor, split the change evenly
-        forces_motor_dot = cs.vertcat(0.5 * df_dot / 4, 0.5 * df_dot / 4, 0.5 * df_dot / 4, 0.5 * df_dot / 4)
+        forces_motor_dot = (f_max - f_min) / 2 * cs.vertcat(df_dot / 4, df_dot / 4, df_dot / 4, df_dot / 4)
         
         thrust = total_thrust
         # Creating force vector with acceleration transformation
