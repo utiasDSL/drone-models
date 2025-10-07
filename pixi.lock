@@ -66,7 +66,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/e0/b1/0542e0cab6f49f151a2d7a42400f84f706fc0b64e85dc1f56708b2e9fd37/array_api_compat-1.12.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/bc/da/693816d1b09287c95425846b9009daf70968e72aaadf65ccb6b79a2b1626/array_api_extra-0.8.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/3f/5b/7120e22f6e22ca77283f4a086ab2e59d107f00bfc952116db41a015385fe/casadi-3.7.2-cp313-none-manylinux2014_x86_64.whl
-      - pypi: https://files.pythonhosted.org/packages/b7/3f/945ef7ab14dc4f9d7f40288d2df998d1837ee0888ec3659c813487572faa/pip-25.2-py3-none-any.whl
       - pypi: git+https://github.com/scipy/scipy.git?rev=4cb83b6#4cb83b62d4bf1d27f63a57988a0fcd2aa15d6640
       - pypi: ./
   docs:
@@ -183,7 +182,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/01/53/76c109e6f822a6d19befb0450c87330b9a6ce52353de6a9dda7892060a1f/mkdocs_section_index-0.3.10-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/de/b4/3c5eac68f31e124a55d255d318c7445840fa1be55e013f507556d6481913/mkdocstrings-0.30.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/5d/96/7ecc71bb9f01ee20f201b2531960b401159c6730aec90ec76a1b74bc81e1/mkdocstrings_python-1.18.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/b7/3f/945ef7ab14dc4f9d7f40288d2df998d1837ee0888ec3659c813487572faa/pip-25.2-py3-none-any.whl
       - pypi: git+https://github.com/scipy/scipy.git?rev=4cb83b6#4cb83b62d4bf1d27f63a57988a0fcd2aa15d6640
       - pypi: ./
   tests:
@@ -269,7 +267,6 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/56/69/209e5b81dd89da84f729a684c126cc3c22bb8d6516f8c968444c7d86050f/jaxlib-0.7.1-cp313-cp313-manylinux_2_27_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/14/f3/091ba84e5395d7fe5b30c081a44dec881cd84b408db1763ee50768b2ab63/ml_dtypes-0.5.3-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/23/cd/066e86230ae37ed0be70aae89aabf03ca8d9f39c8aea0dec8029455b5540/opt_einsum-3.4.0-py3-none-any.whl
-      - pypi: https://files.pythonhosted.org/packages/b7/3f/945ef7ab14dc4f9d7f40288d2df998d1837ee0888ec3659c813487572faa/pip-25.2-py3-none-any.whl
       - pypi: git+https://github.com/scipy/scipy.git?rev=4cb83b6#4cb83b62d4bf1d27f63a57988a0fcd2aa15d6640
       - pypi: ./
 packages:
@@ -523,7 +520,7 @@ packages:
 - pypi: ./
   name: drone-models
   version: 0.0.1
-  sha256: fd804a97e9b1930de0663c484765c70329e77a2ce35036ddcb13a958db1870b2
+  sha256: f530a509eb26ed2645d42933e6db6ccd489532e326f618b785d390fee4a31824
   requires_dist:
   - numpy>=2.0.0
   - casadi>=3.7.0
@@ -531,7 +528,6 @@ packages:
   - scipy @ git+https://github.com/scipy/scipy.git@4cb83b6
   - array-api-typing @ git+https://github.com/data-apis/array-api-typing
   - array-api-extra
-  - pip
   editable: true
 - conda: https://conda.anaconda.org/conda-forge/noarch/exceptiongroup-1.3.0-pyhd8ed1ab_0.conda
   sha256: ce61f4f99401a4bd455b89909153b40b9c823276aefcbb06f2044618696009ca
@@ -1402,11 +1398,6 @@ packages:
   - pkg:pypi/pathspec?source=hash-mapping
   size: 41075
   timestamp: 1733233471940
-- pypi: https://files.pythonhosted.org/packages/b7/3f/945ef7ab14dc4f9d7f40288d2df998d1837ee0888ec3659c813487572faa/pip-25.2-py3-none-any.whl
-  name: pip
-  version: '25.2'
-  sha256: 6d67a2b4e7f14d8b31b8b52648866fa717f45a1eb70e83002f4331d07e953717
-  requires_python: '>=3.9'
 - conda: https://conda.anaconda.org/conda-forge/noarch/platformdirs-4.4.0-pyhcf101f3_0.conda
   sha256: dfe0fa6e351d2b0cef95ac1a1533d4f960d3992f9e0f82aeb5ec3623a699896b
   md5: cc9d9a3929503785403dbfad9f707145
