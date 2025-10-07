@@ -28,7 +28,7 @@ include-package-data = true
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["drone_models"]
+include = ["drone_models*"]
 
 [tool.setuptools.package-data]
 drone_models = [
