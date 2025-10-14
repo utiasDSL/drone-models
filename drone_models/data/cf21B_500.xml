@@ -43,9 +43,13 @@
       <geom mesh="connector-pins" material="gold" class="visual" />
       <geom mesh="battery" material="light-gray" class="visual" />
       <geom mesh="battery-holder" material="black" class="visual" />
+      
       <!-- Collision geometry is estimated based on the visual mesh. We use a sphere for maximum
-       computational efficiency with larger swarms. -->
-      <geom type="sphere" size="0.082" class="collision" name="col" />
+       computational efficiency with larger swarms. Used by default-->
+      <geom  name="col_sphere" type="sphere" size="0.086" pos="0 0 0.02" class="collision" contype="1" conaffinity="1" />
+      <!-- For higher accuracy with lower performance, you can use a box. By default off. -->
+      <geom  name="col_box" type="box" size="0.07 0.07 0.02" class="collision" rgba="0.5 0.5 0.5 0" contype="0" conaffinity="0" />
+
       <site name="CoM" />
       <site name="motor0" pos="0.03536 -0.03536 0.0" />
       <site name="motor1" pos="-0.03536 -0.03536 0.0" />

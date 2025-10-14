@@ -12,8 +12,9 @@
     <mesh name="pcb" file="cf2x/cf2x_pcb.stl" scale="0.001 0.001 0.001"/>
     <mesh name="motors" file="cf2x/cf2xT_motors.stl" scale="0.001 0.001 0.001"/>
     <mesh name="motor-holder" file="cf2x/cf2x_motor-holder.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="propL" file="cf2x/cf2xT_PropL.stl" scale="0.001 0.001 0.001"/>
-    <mesh name="propR" file="cf2x/cf2xT_PropR.stl" scale="0.001 0.001 0.001"/>
+    <!-- Using the wrong propellers for now. Correct ones not available -->
+    <mesh name="propL" file="cf21B/cf21B_PropL.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="propR" file="cf21B/cf21B_PropR.stl" scale="0.001 0.001 0.001"/>
     <mesh name="connectors" file="cf2x/cf2x_connectors.stl" scale="0.001 0.001 0.001"/>
     <mesh name="connector-pins" file="cf2x/cf2x_connector-pins.stl" scale="0.001 0.001 0.001"/>
     <mesh name="battery" file="cf2x/cf2x_battery.stl" scale="0.001 0.001 0.001"/>
@@ -43,9 +44,13 @@
       <geom mesh="connector-pins" material="gold" class="visual" />
       <geom mesh="battery" material="light-gray" class="visual" />
       <geom mesh="battery-holder" material="black" class="visual" />
+
       <!-- Collision geometry is estimated based on the visual mesh. We use a sphere for maximum
-       computational efficiency with larger swarms. -->
-      <geom type="sphere" size="0.055" class="collision" name="col" />
+       computational efficiency with larger swarms. Used by default-->
+      <geom  name="col_sphere" type="sphere" size="0.0725" pos="0 0 0.01" class="collision" contype="1" conaffinity="1" />
+      <!-- For higher accuracy with lower performance, you can use a box. By default off. -->
+      <geom  name="col_box" type="box" size="0.0575 0.0575 0.02" class="collision" rgba="0.5 0.5 0.5 0" contype="0" conaffinity="0" />
+
       <site name="CoM" />
       <site name="motor0" pos="0.0325 -0.0325 0.0" />
       <site name="motor1" pos="-0.0325 -0.0325 0.0" />
@@ -53,16 +58,16 @@
       <site name="motor3" pos="0.0325 0.0325 0.0" />
 
       <!-- Propellers -->
-      <body name="prop0" pos="0.0325 -0.0325 0.012" euler="0 0 45">
+      <body name="prop0" pos="0.0325 -0.0325 0.015" euler="0 0 45">
         <geom mesh="propL" material="black" class="visual"/>
       </body>
-      <body name="prop1" pos="-0.0325 -0.0325 0.012" euler="0 0 135">
+      <body name="prop1" pos="-0.0325 -0.0325 0.015" euler="0 0 135">
         <geom mesh="propR" material="black" class="visual"/>
       </body>
-      <body name="prop2" pos="-0.0325 0.0325 0.012" euler="0 0 225">
+      <body name="prop2" pos="-0.0325 0.0325 0.015" euler="0 0 225">
         <geom mesh="propL" material="black" class="visual"/>
       </body>
-      <body name="prop3" pos="0.0325 0.0325 0.012" euler="0 0 315">
+      <body name="prop3" pos="0.0325 0.0325 0.015" euler="0 0 315">
         <geom mesh="propR" material="black" class="visual"/>
       </body>
     </body>
