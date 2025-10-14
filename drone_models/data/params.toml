@@ -5,9 +5,9 @@ gravity_vec = [0.0, 0.0, -9.81]
 mass = 0.033
 L = 0.03253
 J = [
-    [1.68e-5, 0.0, 0.0],
-    [0.0, 1.68e-5, 0.0],
-    [0.0, 0.0, 2.98e-5]
+    [16.8e-6, 0.0, 0.0],
+    [0.0, 16.8e-6, 0.0],
+    [0.0, 0.0, 29.8e-6]
 ]
 rpm2thrust = [0.0, 0.0, 3.16e-10] # TODO, Index is order
 rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
@@ -21,7 +21,7 @@ mixing_matrix = [
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
-pwm_min = 20000
+pwm_min = 7000
 pwm_max = 65535
 thrust_min = 0.02  # in N per motor
 thrust_max = 0.1125  # in N per motor
@@ -39,10 +39,10 @@ gravity_vec = [0.0, 0.0, -9.81]
 mass = 0.03454
 L = 0.03253
 # J from IROS 2022
-J = [
-    [1.4e-5, 0.0,    0.0],
-    [0.0, 1.4e-5, 0.0],
-    [0.0, 0.0, 2.17e-5]
+J = [ # TODO
+    [14e-6, 0.0,    0.0],
+    [0.0, 14e-6, 0.0],
+    [0.0, 0.0, 21.7e-6]
 ]
 rpm2thrust = [0.0, 0.0, 5.792654323957372e-10] # TODO, Index is order
 rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
@@ -54,7 +54,7 @@ mixing_matrix = [
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
-pwm_min = 20000
+pwm_min = 7000
 pwm_max = 65535
 thrust_min = 0.02  # in N per motor
 thrust_max = 0.1125  # in N per motor
@@ -72,9 +72,9 @@ gravity_vec = [0.0, 0.0, -9.81]
 mass = 0.03454 # TODO
 L = 0.03253
 J = [ # TODO
-    [1.4e-5, 0.0,    0.0],
-    [0.0, 1.4e-5, 0.0],
-    [0.0, 0.0, 2.17e-5]
+    [14e-6, 0.0,   0.0    ],
+    [0.0,   14e-6, 0.0    ],
+    [0.0,   0.0,   21.7e-6]
 ]
 rpm2thrust = [0.0, 0.0, 1.068340683985525e-09] # TODO, Index is order
 rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
@@ -86,7 +86,7 @@ mixing_matrix = [
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
-pwm_min = 20000
+pwm_min = 7000
 pwm_max = 65535
 thrust_min = 0.03  # in N per motor
 thrust_max = 0.1625  # in N per motor
@@ -104,9 +104,9 @@ gravity_vec = [0.0, 0.0, -9.81]
 mass = 0.04338
 L = 0.035355
 J = [
-    [2.5e-5, 0.0,    0.0],
-    [0.0,    2.8e-5, 0.0],
-    [0.0,    0.0,    4.9e-5]
+    [25e-6, 0.0,   0.0],
+    [0.0,   28e-6, 0.0],
+    [0.0,   0.0,   49e-6]
 ]
 rpm2thrust = [0.0, 2.6713375766104237e-06, 2.9910560258944037e-10] # TODO , Index is order
 rpm2torque = [0.0, 2.435151264350409e-09, 2.424629050055297e-12] # TODO , Index is order
@@ -119,7 +119,7 @@ mixing_matrix = [
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
-pwm_min = 20000
+pwm_min = 7000
 pwm_max = 65535
 thrust_min = 0.03  # in N per motor
 thrust_max = 0.18  # in N per motor
