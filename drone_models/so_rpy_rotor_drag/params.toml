@@ -1,42 +1,42 @@
 [cf2x_L250]
-thrust_time_coef = 0.1891
 acc_coef = 0.0
 cmd_f_coef = 1.0627
+thrust_time_coef = 0.1891
+drag_linear_coef = -0.0177
+drag_square_coef = 0.0010
 rpy_coef = [-257.2, -257.2, 225.3]
 rpy_rates_coef = [-20.2, -20.2, -28.61]
 cmd_rpy_coef = [207.1, 207.1, 392.7]
-drag_linear_coef = -0.0177
-drag_square_coef = 0.0010
 
 # TODO: Check if parameters are correct
 [cf2x_P250]
-thrust_time_coef = 0.1891
 acc_coef = 0.0
 cmd_f_coef = 1.0627
+thrust_time_coef = 0.1891
+drag_linear_coef = -0.0177
+drag_square_coef = 0.0010
 rpy_coef = [-257.2, -257.2, -225.3]
 rpy_rates_coef = [-20.2, -20.2, -28.61]
 cmd_rpy_coef = [207.1, 207.1, 392.7]
-drag_linear_coef = -0.0177
-drag_square_coef = 0.0010
 
 # TODO: Check if parameters are correct
 [cf2x_T350]
-thrust_time_coef = 0.1891
 acc_coef = 0.0
 cmd_f_coef = 1.0627
+thrust_time_coef = 0.1891
+drag_linear_coef = -0.0177
+drag_square_coef = 0.0010
 rpy_coef = [-257.2, -257.2, -225.3]
 rpy_rates_coef = [-20.2, -20.2, -28.61]
 cmd_rpy_coef = [207.1, 207.1, 392.7]
-drag_linear_coef = -0.0177
-drag_square_coef = 0.0010
 
 
 [cf21B_500]
-thrust_time_coef = 0.08238289
 acc_coef = 0.0
-cmd_f_coef = 0.99509171
-rpy_coef = [-160.5, -160.5, -109.3]
-rpy_rates_coef = [-10.74, -10.74, -13.69]
-cmd_rpy_coef = [115.2, 115.2, 154.6]
-drag_linear_coef = -0.02063486
-drag_square_coef = -0.02272605
+cmd_f_coef = 0.98023254
+thrust_time_coef = 0.07993871
+drag_linear_coef = -0.02149163
+drag_square_coef = -0.02359736
+rpy_coef = [-188.9910, -188.9910, -138.3109]
+rpy_rates_coef = [-12.7803, -12.7803, -16.8485]
+cmd_rpy_coef = [138.0834, 138.0834, 198.5161]
