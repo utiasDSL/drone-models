@@ -63,7 +63,7 @@ def dynamics(
         rpm2torque: Propeller torque constant (Nm min^2).
         L: Distance from the CoM to the motor (m).
         mixing_matrix: Mixing matrix denoting the turn direction of the motors (4x3).
-        thrust_tau: Thrust time constant (s).
+        rotor_tau: Thrust time constant (s).
 
     .. math::
         \sum_{i=1}^{\\infty} x_{i} TODO
