@@ -35,7 +35,7 @@ def dynamics(
     rpm2torque: Array,
     L: float,
     mixing_matrix: Array,
-    thrust_tau: float,
+    rotor_tau: float,
 ) -> tuple[Array, Array, Array, Array, Array | None]:
     r"""First principles model for a quatrotor.
 
@@ -74,7 +74,7 @@ def dynamics(
         More information https://ahrs.readthedocs.io/en/latest/filters/angular.html
     """
     xp = array_namespace(pos)
-    mass, gravity_vec, J, J_inv, rpm2thrust, rpm2torque, L, mixing_matrix, thrust_tau = to_xp(
+    mass, gravity_vec, J, J_inv, rpm2thrust, rpm2torque, L, mixing_matrix, rotor_tau = to_xp(
         mass,
         gravity_vec,
         J,
@@ -83,7 +83,7 @@ def dynamics(
         rpm2torque,
         L,
         mixing_matrix,
-        thrust_tau,
+        rotor_tau,
         xp=xp,
         device=device(pos),
     )
@@ -92,7 +92,7 @@ def dynamics(
     if rotor_vel is None:
         rotor_vel, rotor_vel_dot = cmd, None
     else:
-        rotor_vel_dot = 1 / thrust_tau * (cmd - rotor_vel)  # - 1 / KM * rotor_vel**2
+        rotor_vel_dot = 1 / rotor_tau * (cmd - rotor_vel)  # - 1 / KM * rotor_vel**2
     # Creating force and torque vector
     forces_motor = rpm2thrust[0] + rpm2thrust[1] * rotor_vel + rpm2thrust[2] * rotor_vel**2
     torques_motor = rpm2torque[0] + rpm2torque[1] * rotor_vel + rpm2torque[2] * rotor_vel**2
@@ -137,7 +137,7 @@ def symbolic_dynamics(
     rpm2torque: Array,
     L: float,
     mixing_matrix: Array,
-    thrust_tau: float,
+    rotor_tau: float,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """TODO take from numeric."""
     # States and Inputs
@@ -153,7 +153,7 @@ def symbolic_dynamics(
     # Defining the dynamics function
     if model_rotor_vel:
         # Thrust dynamics
-        rotor_vel_dot = 1 / thrust_tau * (U - symbols.rotor_vel)  # - 1 / KM * symbols.rotor_vel**2
+        rotor_vel_dot = 1 / rotor_tau * (U - symbols.rotor_vel)  # - 1 / KM * symbols.rotor_vel**2
         forces_motor = (
             rpm2thrust[0] + rpm2thrust[1] * symbols.rotor_vel + rpm2thrust[2] * symbols.rotor_vel**2
         )

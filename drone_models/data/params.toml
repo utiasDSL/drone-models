@@ -13,7 +13,8 @@ rpm2thrust = [0.0, 0.0, 3.16e-10] # TODO, Index is order
 rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
 # TODO: This is an arbitrary number that leads to a working simulation. It MUST be fitted and
 # updated as soon as possible.
-thrust_tau = 0.03 # TODO value? TODO rename to rotor_tau
+thrust_tau = 0.03 # TODO value?
+rotor_tau = 0.03 # TODO value?
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
@@ -46,7 +47,8 @@ J = [ # TODO
 ]
 rpm2thrust = [0.0, 0.0, 5.792654323957372e-10] # TODO, Index is order
 rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
-thrust_tau = 0.138 # TODO value? TODO rename to rotor_tau
+thrust_tau = 0.138 # TODO value?
+rotor_tau = 0.138 # TODO value?
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
@@ -78,7 +80,8 @@ J = [ # TODO
 ]
 rpm2thrust = [0.0, 0.0, 1.068340683985525e-09] # TODO, Index is order
 rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
-thrust_tau = 0.115 # TODO value? TODO rename to rotor_tau
+thrust_tau = 0.115 # TODO value?
+rotor_tau = 0.115 # TODO value?
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
@@ -108,10 +111,11 @@ J = [
     [0.0,   28e-6, 0.0],
     [0.0,   0.0,   49e-6]
 ]
-rpm2thrust = [0.0, 2.6713375766104237e-06, 2.9910560258944037e-10] # TODO , Index is order
-rpm2torque = [0.0, 2.435151264350409e-09, 2.424629050055297e-12] # TODO , Index is order
+rpm2thrust = [0.0, -3.133427287299859e-7, 4.407354891648379e-10] # TODO , Index is order
+rpm2torque = [0.0, 1.65886356219615e-9, 2.4693477924534137e-12] # TODO , Index is order
 thrust2torque = 0.00593893393599368
-thrust_tau = 0.08 # TODO value? TODO rename to rotor_tau
+thrust_tau = 0.06286705869479182
+rotor_tau = 0.06082197967926632
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
@@ -121,12 +125,12 @@ mixing_matrix = [
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
 pwm_min = 7000
 pwm_max = 65535
-thrust_min = 0.03  # in N per motor
-thrust_max = 0.18  # in N per motor
-vmotor_min = 0.983691398141343  # in V
-vmotor_max = 2.643523702759344  # in V
-vmotor2thrust = [-0.023218159473266192, 0.057892237383960946, -0.005372315709548128, 0.003180315209941464]  # Index is order
-vmotor2torque = [-0.023218159473266192, 0.057892237383960946, -0.005372315709548128, 0.003180315209941464]  # TODO, Index is order
-vmotor2rpm = [4304.90684659941, 3948.957007115487]  # Index is order
+thrust_min = 0.02136263065537499  # in N per motor
+thrust_max = 0.2  # in N per motor
+vmotor_min = 0.8298950452630223  # in V
+vmotor_max = 3.084359953389033  # in V
+vmotor2thrust = [-0.014058926705279723, 0.04265273261724981, 0.0018327760144017432, 0.0020576974784587178]  # Index is order
+vmotor2torque = [-0.00016088354909542246, 0.0003960426420309137, -4.6274122414327404e-5, 1.8490661674309596e-5]  # TODO, Index is order
+vmotor2rpm = [2938.3995608848436, 6001.834195381014]  # Index is order
 prop_radius = 27.5e-3 # TODO check
 prop_inertia = 38.93e-9
