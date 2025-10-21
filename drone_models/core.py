@@ -77,7 +77,6 @@ def parametrize(
     """
     try:
         xp = np if xp is None else xp
-        # physics = Path(sys.modules[fn.__module__].__file__).parent.name
         physics = fn.__module__.split(".")[-2]
         sig = inspect.signature(fn)
         kwonly_params = [
@@ -86,10 +85,7 @@ def parametrize(
             if param.kind == inspect.Parameter.KEYWORD_ONLY
         ]
         params = load_params(physics, drone_model)
-
         params = {k: xp.asarray(v, device=device) for k, v in params.items() if k in kwonly_params}
-        # if xp is not None:  # Convert to any array API framework
-        #     params = named_tuple2xp(params, xp=xp, device=device)
     except KeyError as e:
         raise KeyError(
             f"Model `{physics}` does not exist in the parameter registry for drone `{drone_model}`"
