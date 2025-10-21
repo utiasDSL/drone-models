@@ -186,7 +186,7 @@ def symbolic_dynamics(
 
 
 def symbolic_dynamics_euler(
-    model_rotor_vel: bool = True,
+    model_rotor_vel: bool = False,
     *,
     mass: float,
     gravity_vec: Array,
@@ -207,6 +207,7 @@ def symbolic_dynamics_euler(
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.rpy, symbols.vel, symbols.drpy)
     if model_rotor_vel:
+        logging.getLogger(__name__).warning("The so_rpy model does not support thrust dynamics")
         X = cs.vertcat(X, symbols.rotor_vel)
     U = symbols.cmd_rpyt
     cmd_rpy = U[:3]
