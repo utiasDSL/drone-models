@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 import casadi as cs
@@ -146,17 +147,13 @@ def symbolic_dynamics(
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.quat, symbols.vel, symbols.ang_vel)
     if model_rotor_vel:
-        print("[WARNING]: The so_rpy model does not support thrust dynamics")
+        logging.getLogger(__name__).warning("The so_rpy model does not support thrust dynamics")
         X = cs.vertcat(X, symbols.rotor_vel)
     if model_dist_f:
         X = cs.vertcat(X, symbols.dist_f)
     if model_dist_t:
         X = cs.vertcat(X, symbols.dist_t)
     U = U_euler
-
-    # Defining the dynamics function
-    # Creating force vector
-    forces_motor_vec = cs.vertcat(0, 0, acc_coef + cmd_f_coef * symbols.cmd_thrust)
 
     # Linear equation of motion
     pos_dot = X_dot_euler[0:3]

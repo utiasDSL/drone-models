@@ -494,6 +494,7 @@ cs_rpy_rates_deriv2ang_vel_deriv = create_cs_rpy_rates_deriv2ang_vel_deriv()
 
 
 def create_cs_quat2matrix() -> cs.Function:
+    """Generates a casadi numeric function from the cs_quat2matrix function."""
     qw = cs.MX.sym("qw")
     qx = cs.MX.sym("qx")
     qy = cs.MX.sym("qy")
@@ -507,6 +508,7 @@ cs_quat2matrix_func = create_cs_quat2matrix()
 
 
 def create_cs_rpy2matrix() -> cs.Function:
+    """Generates a casadi numeric function from the cs_rpy2matrix function."""
     roll = cs.MX.sym("roll")
     pitch = cs.MX.sym("pitch")
     yaw = cs.MX.sym("yaw")
