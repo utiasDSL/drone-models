@@ -28,7 +28,9 @@ if TYPE_CHECKING:
 jax.config.update("jax_enable_x64", True)
 
 
-def create_rnd_states(shape: tuple[int, ...] = ()) -> tuple[Array, Array, Array, Array]:
+def create_rnd_states(
+    shape: tuple[int, ...] = (),
+) -> tuple[Array, Array, Array, Array, Array, Array, Array]:
     x = np.random.randn(*shape, 3 + 4 + 3 + 3 + 4 + 3 + 3)
     pos = xp.asarray(x[..., :3])
     quat = xp.asarray(x[..., 3:7])

@@ -16,6 +16,8 @@ from scipy.spatial.transform import Rotation as R
 if TYPE_CHECKING:
     from array_api_strict import Array
 
+# region Numeric
+
 
 def ang_vel2quat_dot(quat: Array, ang_vel: Array) -> Array:
     """Calculates the quaternion derivative based on an angular velocity."""
@@ -188,6 +190,9 @@ def rpy_rates_deriv2ang_vel_deriv(quat: Array, rpy_rates: Array, rpy_rates_deriv
     return xp.matmul(W_dot, rpy_rates[..., None])[..., 0] + rpy_rates2ang_vel(quat, rpy_rates_deriv)
 
 
+# region Symbolic
+
+
 def cs_quat2euler(quat: cs.MX, seq: str = "xyz", degrees: bool = False) -> cs.MX:
     """TODO."""
     if len(seq) != 3:
@@ -288,6 +293,69 @@ def cs_quat2euler(quat: cs.MX, seq: str = "xyz", degrees: bool = False) -> cs.MX
         angles = (cs.np.pi / 180.0) * cs.horzcat(angles)
 
     return angles
+
+
+def cs_quat2matrix(quat: cs.MX) -> cs.MX:
+    """Creates a symbolic rotation matrix based on a symbolic quaternion.
+
+    From https://github.com/cmower/spatial-casadi/blob/master/spatial_casadi/spatial.py
+    """
+    x = quat[0] / cs.norm_2(quat)
+    y = quat[1] / cs.norm_2(quat)
+    z = quat[2] / cs.norm_2(quat)
+    w = quat[3] / cs.norm_2(quat)
+
+    x2 = x * x
+    y2 = y * y
+    z2 = z * z
+    w2 = w * w
+
+    xy = x * y
+    zw = z * w
+    xz = x * z
+    yw = y * w
+    yz = y * z
+    xw = x * w
+
+    matrix = cs.horzcat(
+        cs.vertcat(x2 - y2 - z2 + w2, 2.0 * (xy + zw), 2.0 * (xz - yw)),
+        cs.vertcat(2.0 * (xy - zw), -x2 + y2 - z2 + w2, 2.0 * (yz + xw)),
+        cs.vertcat(2.0 * (xz + yw), 2.0 * (yz - xw), -x2 - y2 + z2 + w2),
+    )
+
+    return matrix
+
+
+def cs_rpy2matrix(rpy: cs.MX, degrees: bool = False) -> cs.MX:
+    """Creates a symbolic rotation matrix from roll, pitch, yaw (XYZ convention).
+
+    Should be equivalent to scipy.spatial.transform.Rotation.from_euler('xyz', rpy).as_matrix()
+    TODO write tests!!
+    """
+    roll, pitch, yaw = rpy[0], rpy[1], rpy[2]
+    if degrees:
+        roll *= cs.pi / 180
+        pitch *= cs.pi / 180
+        yaw *= cs.pi / 180
+
+    cr = cs.cos(roll)
+    sr = cs.sin(roll)
+    cp = cs.cos(pitch)
+    sp = cs.sin(pitch)
+    cy = cs.cos(yaw)
+    sy = cs.sin(yaw)
+
+    # Rotation matrix for R = Rz(yaw) * Ry(pitch) * Rx(roll)
+    matrix = cs.vertcat(
+        cs.horzcat(cy * cp, cy * sp * sr - sy * cr, cy * sp * cr + sy * sr),
+        cs.horzcat(sy * cp, sy * sp * sr + cy * cr, sy * sp * cr - cy * sr),
+        cs.horzcat(-sp, cp * sr, cp * cr),
+    )
+
+    return matrix
+
+
+# region Wrappers
 
 
 def create_cs_ang_vel2rpy_rates() -> cs.Function:
@@ -425,32 +493,26 @@ def create_cs_rpy_rates_deriv2ang_vel_deriv() -> cs.Function:
 cs_rpy_rates_deriv2ang_vel_deriv = create_cs_rpy_rates_deriv2ang_vel_deriv()
 
 
-def cs_quat2matrix(quat: cs.MX) -> cs.MX:
-    """Creates a symbolic rotation matrix based on a symbolic quaternion.
+def create_cs_quat2matrix() -> cs.Function:
+    qw = cs.MX.sym("qw")
+    qx = cs.MX.sym("qx")
+    qy = cs.MX.sym("qy")
+    qz = cs.MX.sym("qz")
+    quat = cs.vertcat(qx, qy, qz, qw)
+    matrix = cs_quat2matrix(quat)
+    return cs.Function("cs_quat2matrix", [quat], [matrix])
 
-    From https://github.com/cmower/spatial-casadi/blob/master/spatial_casadi/spatial.py
-    """
-    x = quat[0] / cs.norm_2(quat)
-    y = quat[1] / cs.norm_2(quat)
-    z = quat[2] / cs.norm_2(quat)
-    w = quat[3] / cs.norm_2(quat)
 
-    x2 = x * x
-    y2 = y * y
-    z2 = z * z
-    w2 = w * w
+cs_quat2matrix_func = create_cs_quat2matrix()
 
-    xy = x * y
-    zw = z * w
-    xz = x * z
-    yw = y * w
-    yz = y * z
-    xw = x * w
 
-    matrix = cs.horzcat(
-        cs.vertcat(x2 - y2 - z2 + w2, 2.0 * (xy + zw), 2.0 * (xz - yw)),
-        cs.vertcat(2.0 * (xy - zw), -x2 + y2 - z2 + w2, 2.0 * (yz + xw)),
-        cs.vertcat(2.0 * (xz + yw), 2.0 * (yz - xw), -x2 - y2 + z2 + w2),
-    )
+def create_cs_rpy2matrix() -> cs.Function:
+    roll = cs.MX.sym("roll")
+    pitch = cs.MX.sym("pitch")
+    yaw = cs.MX.sym("yaw")
+    rpy = cs.vertcat(roll, pitch, yaw)
+    matrix = cs_rpy2matrix(rpy)
+    return cs.Function("cs_rpy2matrix", [rpy], [matrix])
 
-    return matrix
+
+cs_rpy2matrix_func = create_cs_rpy2matrix()

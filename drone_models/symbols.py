@@ -14,7 +14,7 @@ Acados.
 
 :meta hide-value:
 """
-
+# States
 qw, qx, qy, qz = cs.MX.sym("qw"), cs.MX.sym("qx"), cs.MX.sym("qy"), cs.MX.sym("qz")
 quat = cs.vertcat(qx, qy, qz, qw)  # Quaternions
 rot = rotation.cs_quat2matrix(quat)  # Rotation matrix from body to world frame
@@ -41,3 +41,9 @@ cmd_force = cs.vertcat(cmd_w1, cmd_w2, cmd_w3, cmd_w4)
 cmd_roll, cmd_pitch, cmd_yaw = (cs.MX.sym("cmd_roll"), cs.MX.sym("cmd_pitch"), cs.MX.sym("cmd_yaw"))
 cmd_thrust = cs.MX.sym("cmd_thrust")
 cmd_rpyt = cs.vertcat(cmd_roll, cmd_pitch, cmd_yaw, cmd_thrust)
+
+# Special states for the so_rpy models
+roll, pitch, yaw = cs.MX.sym("roll"), cs.MX.sym("pitch"), cs.MX.sym("yaw")
+rpy = cs.vertcat(roll, pitch, yaw)
+droll, dpitch, dyaw = cs.MX.sym("droll"), cs.MX.sym("dpitch"), cs.MX.sym("dyaw")
+drpy = cs.vertcat(droll, dpitch, dyaw)

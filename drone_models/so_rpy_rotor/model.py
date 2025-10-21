@@ -39,7 +39,7 @@ def dynamics(
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
 ) -> tuple[Array, Array, Array, Array, Array | None]:
-    """The fitted double integrator (DI) model with optional motor delay (D).
+    """Fitted model with linear, second order rpy dynamics with thrust dynamics.
 
     Args:
         pos: Position of the drone (m).
@@ -137,10 +137,29 @@ def symbolic_dynamics(
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
-    """The fitted double integrator (DI) model with optional motor delay (D).
+    """Fitted model with linear, second order rpy dynamics with thrust dynamics.
 
-    TODO.
+    For info on the args, see above.
+
+    This wrapper converts the actual symbolic model, defined below, into the quat and ang_vel form.
     """
+    ## We need to set the rpy and drpy symbols before building the euler model
+    symbols.rpy = rotation.cs_quat2euler(symbols.quat)
+    symbols.drpy = rotation.cs_ang_vel2rpy_rates(symbols.quat, symbols.ang_vel)
+    X_dot_euler, X_euler, U_euler, Y_euler = symbolic_dynamics_euler(
+        model_rotor_vel=model_rotor_vel,
+        mass=mass,
+        gravity_vec=gravity_vec,
+        J=J,
+        J_inv=J_inv,
+        thrust_time_coef=thrust_time_coef,
+        acc_coef=acc_coef,
+        cmd_f_coef=cmd_f_coef,
+        rpy_coef=rpy_coef,
+        rpy_rates_coef=rpy_rates_coef,
+        cmd_rpy_coef=cmd_rpy_coef,
+    )
+
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.quat, symbols.vel, symbols.ang_vel)
     if model_rotor_vel:
@@ -149,44 +168,23 @@ def symbolic_dynamics(
         X = cs.vertcat(X, symbols.dist_f)
     if model_dist_t:
         X = cs.vertcat(X, symbols.dist_t)
-    U = cs.vertcat(symbols.cmd_roll, symbols.cmd_pitch, symbols.cmd_yaw, symbols.cmd_thrust)
-    cmd_rpy = cs.vertcat(symbols.cmd_roll, symbols.cmd_pitch, symbols.cmd_yaw)
-
-    # Defining the dynamics function
-    # Note that we are abusing the rotor_vel state as the thrust
-    if model_rotor_vel:
-        # motor_force2rotor_vel
-        # cmd_rotor_vel = cs.sqrt(symbols.cmd_thrust / 4 / KF)
-        cmd_rotor_vel = symbols.cmd_thrust  # this is just a hack for testing TODO remove
-        rotor_vel_dot = (
-            1
-            / thrust_time_coef
-            * (cmd_rotor_vel - symbols.rotor_vel)  # - KM * symbols.rotor_vel**2
-        )
-        # forces_motor = KF * cs.sum1(symbols.rotor_vel**2)
-        forces_motor = symbols.rotor_vel[0]
-    else:
-        forces_motor = symbols.cmd_thrust
-    # Creating force vector
-    forces_motor_vec = cs.vertcat(0, 0, acc_coef + cmd_f_coef * forces_motor)
+    U = U_euler
 
     # Linear equation of motion
-    pos_dot = symbols.vel
-    vel_dot = symbols.rot @ forces_motor_vec / mass + gravity_vec
+    pos_dot = X_dot_euler[0:3]
+    vel_dot = X_dot_euler[6:9]
     if model_dist_f:
         # Adding force disturbances to the state
         vel_dot = vel_dot + symbols.dist_f / mass
 
     # Rotational equation of motion
-    euler_angles = rotation.cs_quat2euler(symbols.quat)
-
     xi = cs.vertcat(
         cs.horzcat(0, -symbols.ang_vel.T), cs.horzcat(symbols.ang_vel, -cs.skew(symbols.ang_vel))
     )
     quat_dot = 0.5 * (xi @ symbols.quat)
-    rpy_rates = rotation.cs_ang_vel2rpy_rates(symbols.quat, symbols.ang_vel)
-    rpy_rates_dot = rpy_coef * euler_angles + rpy_rates_coef * rpy_rates + cmd_rpy_coef * cmd_rpy
-    ang_vel_dot = rotation.cs_rpy_rates_deriv2ang_vel_deriv(symbols.quat, rpy_rates, rpy_rates_dot)
+    ang_vel_dot = rotation.cs_rpy_rates_deriv2ang_vel_deriv(
+        symbols.quat, symbols.drpy, X_dot_euler[9:12]
+    )
     if model_dist_t:
         # adding torque disturbances to the state
         # angular acceleration can be converted to total torque
@@ -197,9 +195,64 @@ def symbolic_dynamics(
         ang_vel_dot = J_inv @ (torque - cs.cross(symbols.ang_vel, J @ symbols.ang_vel))
 
     if model_rotor_vel:
-        X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot)
+        X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot, X_dot_euler[-4:])
     else:
         X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot)
     Y = cs.vertcat(symbols.pos, symbols.quat)
+
+    return X_dot, X, U, Y
+
+
+def symbolic_dynamics_euler(
+    model_rotor_vel: bool = True,
+    *,
+    mass: float,
+    gravity_vec: Array,
+    J: Array,
+    J_inv: Array,
+    thrust_time_coef: Array,
+    acc_coef: Array,
+    cmd_f_coef: Array,
+    rpy_coef: Array,
+    rpy_rates_coef: Array,
+    cmd_rpy_coef: Array,
+) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
+    """The fitted linear, second order rpy dynamics with thrust dynamics.
+
+    For info on the args, see above.
+
+    This function returns the actual model, as defined in the paper, for direct use.
+    """
+    # States and Inputs
+    X = cs.vertcat(symbols.pos, symbols.rpy, symbols.vel, symbols.drpy)
+    if model_rotor_vel:
+        X = cs.vertcat(X, symbols.rotor_vel)
+    U = symbols.cmd_rpyt
+    cmd_rpy = U[:3]
+    cmd_thrust = U[-1]
+    rot = rotation.cs_rpy2matrix(symbols.rpy)
+
+    # Defining the dynamics function
+    # Note that we are abusing the rotor_vel state as the thrust
+    if model_rotor_vel:
+        rotor_vel_dot = 1 / thrust_time_coef * (cmd_thrust - symbols.rotor_vel)
+        forces_motor = symbols.rotor_vel[0]  # We are only using the first element
+    else:
+        forces_motor = cmd_thrust
+
+    # Creating force vector
+    forces_motor_vec = cs.vertcat(0, 0, acc_coef + cmd_f_coef * forces_motor)
+
+    # Linear equation of motion
+    pos_dot = symbols.vel
+    vel_dot = rot @ forces_motor_vec / mass + gravity_vec
+
+    ddrpy = rpy_coef * symbols.rpy + rpy_rates_coef * symbols.drpy + cmd_rpy_coef * cmd_rpy
+
+    if model_rotor_vel:
+        X_dot = cs.vertcat(pos_dot, symbols.drpy, vel_dot, ddrpy, rotor_vel_dot)
+    else:
+        X_dot = cs.vertcat(pos_dot, symbols.drpy, vel_dot, ddrpy)
+    Y = cs.vertcat(symbols.pos, symbols.rpy)
 
     return X_dot, X, U, Y
