@@ -78,10 +78,11 @@ J = [ # TODO
     [0.0,   14e-6, 0.0    ],
     [0.0,   0.0,   21.7e-6]
 ]
-rpm2thrust = [0.0, 0.0, 1.068340683985525e-09] # TODO, Index is order
-rpm2torque = [0.0, 0.0, 7.94e-12] # TODO, Index is order
-thrust_tau = 0.115 # TODO value?
-rotor_tau = 0.115 # TODO value?
+rpm2thrust = [0.0, -7.167227176573658e-7, 2.9401303690194613e-10] # TODO, Index is order
+rpm2torque = [0.0, 3.884268812786822e-10, 1.3440972732648553e-12] # TODO, Index is order
+thrust2torque = 0.0051648627905205285
+thrust_tau = 0.09625268508006131
+rotor_tau = 0.0984319234122739
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
@@ -91,12 +92,12 @@ mixing_matrix = [
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
 pwm_min = 7000
 pwm_max = 65535
-thrust_min = 0.03  # in N per motor
-thrust_max = 0.1625  # in N per motor
-vmotor_min = 0.983691398141343  # in V
-vmotor_max = 2.643523702759344  # in V
-vmotor2thrust = [-0.03978221591250353, 0.10979738851226176, -0.05545304285403245, 0.016215002062640885]  # Index is order
-vmotor2torque = [-0.03978221591250353, 0.10979738851226176, -0.05545304285403245, 0.016215002062640885]  # TODO, Index is order
+thrust_min = 0.01922636758983749  # in N per motor
+thrust_max = 0.18  # in N per motor
+vmotor_min = 0.6793663344313334  # in V
+vmotor_max = 2.8165505305299003  # in V
+vmotor2thrust = [0.006728127583707208, 0.01011557616217668, 0.010263198062061085, 0.0028358638322392503]  # Index is order
+vmotor2torque = [1.1904380527512142e-5, 7.155966384362375e-5, 7.930009008920624e-5, 3.099617784543349e-6]  # TODO, Index is order
 vmotor2rpm = [2738.439005850152, 8054.983767001532]  # Index is order
 prop_radius = 25.4e-3 # TODO check
 prop_inertia = 38.93e-9 # TODO value from B500, currenty unknown
