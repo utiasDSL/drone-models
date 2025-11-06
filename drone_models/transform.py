@@ -15,34 +15,52 @@ if TYPE_CHECKING:
     from array_api_typing import Array
 
 
-def motor_force2rotor_vel(motor_forces: Array, kf: float | Array) -> Array:
-    """Convert motor forces to rotor velocities.
+def motor_force2rotor_vel(motor_forces: Array, rpm2thrust: Array) -> Array:
+    """Convert motor forces to rotor velocities, where f=a*rpm^2+b*rpm+c.
 
     Args:
         motor_forces: Motor forces in SI units with shape (..., N).
-        kf: Thrust coefficient.
+        rpm2thrust: RPM to thrust conversion factors.
 
     Returns:
         Array of rotor velocities in rad/s with shape (..., N).
     """
     xp = array_namespace(motor_forces)
-    return xp.where(motor_forces == 0, 0, xp.sqrt(motor_forces / kf))
+    return (
+        -rpm2thrust[1]
+        + xp.sqrt(rpm2thrust[1] ** 2 - 4 * rpm2thrust[2] * (rpm2thrust[0] - motor_forces))
+    ) / (2 * rpm2thrust[2])
 
 
-def rotor_vel2body_force(rotor_vel: Array, kf: float | Array) -> Array:
+def rotor_vel2body_force(rotor_vel: Array, rpm2thrust: Array) -> Array:
     """Convert rotor velocities to motor forces."""
     xp = array_namespace(rotor_vel)
     body_force = xp.zeros(rotor_vel.shape[:-1] + (3,), dtype=rotor_vel.dtype)
-    body_force = xpx.at(body_force)[..., 2].set(xp.sum(kf * rotor_vel**2, axis=-1))
+    body_force = xpx.at(body_force)[..., 2].set(
+        xp.sum(
+            rpm2thrust[..., 0] + rpm2thrust[..., 1] * rotor_vel + rpm2thrust[..., 2] * rotor_vel**2,
+            axis=-1,
+        )
+    )
     return body_force
 
 
 def rotor_vel2body_torque(
-    rotor_vel: Array, kf: float | Array, km: float | Array, L: float | Array, mixing_matrix: Array
+    rotor_vel: Array, rpm2thrust: Array, rpm2torque: Array, L: float | Array, mixing_matrix: Array
 ) -> Array:
     """Convert rotor velocities to motor torques."""
     xp = array_namespace(rotor_vel)
-    body_torque = rotor_vel**2 * kf @ mixing_matrix * xp.stack([L, L, km / kf])
+    forces = rpm2thrust[..., 0] + rpm2thrust[..., 1] * rotor_vel + rpm2thrust[..., 2] * rotor_vel**2
+    torques_xy = (
+        xp.stack([xp.zeros_like(forces), xp.zeros_like(forces), forces])
+        @ mixing_matrix
+        * xp.stack([L, L, 0])
+    )
+    torques = (
+        rpm2torque[..., 0] + rpm2torque[..., 1] * rotor_vel + rpm2torque[..., 2] * rotor_vel**2
+    )
+    torques_z = xp.stack([xp.zeros_like(torques), xp.zeros_like(torques), torques])
+    body_torque = torques_xy + torques_z
     return body_torque
 
 
