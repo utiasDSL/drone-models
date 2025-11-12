@@ -104,11 +104,11 @@ def dynamics(
         [L, L, xp.asarray(0.0)]
     ) + (mixing_matrix @ (torques_motor)[..., None])[..., 0] * xp.stack(
         [xp.asarray(0.0), xp.asarray(0.0), xp.asarray(1.0)]
-    )
+    )  # TODO add gyro etc
 
     # Linear equation of motion
     forces_motor_vec_world = rot.apply(forces_motor_vec)
-    forces_sum = forces_motor_vec_world + gravity_vec * mass
+    forces_sum = forces_motor_vec_world + gravity_vec * mass  # TODO add drag etc
     if dist_f is not None:
         forces_sum = forces_sum + dist_f
 

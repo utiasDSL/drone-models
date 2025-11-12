@@ -46,8 +46,7 @@ def dynamics(
     rpy_coef: Array,
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
-    drag_linear_coef: Array,
-    drag_square_coef: Array,
+    drag_matrix: Array,
 ) -> tuple[Array, Array, Array, Array, Array | None]:
     """Fitted model with linear, second order rpy dynamics with thrust dynamics and drag.
 
@@ -73,8 +72,7 @@ def dynamics(
         rpy_coef: Coefficient for the roll pitch yaw dynamics (1/s).
         rpy_rates_coef: Coefficient for the roll pitch yaw rates dynamics (1/s^2).
         cmd_rpy_coef: Coefficient for the roll pitch yaw command dynamics (1/s).
-        drag_linear_coef: Coefficient for the linear drag (1/s).
-        drag_square_coef: Coefficient for the square drag (1/s).
+        drag_matrix: Coefficient matrix for the linear drag (1/s).
 
     Returns:
         The derivatives of all state variables.
@@ -89,9 +87,7 @@ def dynamics(
     rpy_coef, rpy_rates_coef, cmd_rpy_coef = to_xp(
         rpy_coef, rpy_rates_coef, cmd_rpy_coef, xp=xp, device=device
     )
-    drag_linear_coef, drag_square_coef = to_xp(
-        drag_linear_coef, drag_square_coef, xp=xp, device=device
-    )
+    drag_matrix = to_xp(drag_matrix, xp=xp, device=device)
     cmd_f = cmd[..., -1]
     cmd_rpy = cmd[..., 0:3]
     rot = R.from_quat(quat)
@@ -106,14 +102,14 @@ def dynamics(
     forces_motor = rotor_vel[..., 0]
     thrust = acc_coef + cmd_f_coef * forces_motor
 
-    drone_z_axis = rot.inv().as_matrix()[..., -1, :]
+    rot_mat = rot.inv().as_matrix()  # rotation from world to body
+    drone_z_axis = rot_mat[..., -1, :]
 
     pos_dot = vel
     vel_dot = (
         1 / mass * thrust[..., None] * drone_z_axis
         + gravity_vec
-        + 1 / mass * drag_linear_coef * vel
-        + 1 / mass * drag_square_coef * vel * xp.abs(vel)
+        + 1 / mass * (rot_mat.mT @ (drag_matrix @ (rot_mat @ vel[..., None])))[..., 0]
     )
     if dist_f is not None:
         vel_dot = vel_dot + dist_f / mass
@@ -153,8 +149,7 @@ def symbolic_dynamics(
     rpy_coef: Array,
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
-    drag_linear_coef: Array,
-    drag_square_coef: Array,
+    drag_matrix: Array,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """Fitted model with linear, second order rpy dynamics with thrust dynamics and drag.
 
@@ -177,8 +172,7 @@ def symbolic_dynamics(
         rpy_coef=rpy_coef,
         rpy_rates_coef=rpy_rates_coef,
         cmd_rpy_coef=cmd_rpy_coef,
-        drag_linear_coef=drag_linear_coef,
-        drag_square_coef=drag_square_coef,
+        drag_matrix=drag_matrix,
     )
 
     # States and Inputs
@@ -237,8 +231,7 @@ def symbolic_dynamics_euler(
     rpy_coef: Array,
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
-    drag_linear_coef: Array,
-    drag_square_coef: Array,
+    drag_matrix: Array,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """The fitted linear, second order rpy dynamics with thrust dynamics and drag.
 
@@ -253,7 +246,7 @@ def symbolic_dynamics_euler(
     U = symbols.cmd_rpyt
     cmd_rpy = U[:3]
     cmd_thrust = U[-1]
-    rot = rotation.cs_rpy2matrix(symbols.rpy)
+    rot = rotation.cs_rpy2matrix(symbols.rpy)  # rotation matrix from body to world
 
     # Defining the dynamics function
     # Note that we are abusing the rotor_vel state as the thrust
@@ -269,10 +262,9 @@ def symbolic_dynamics_euler(
     # Linear equation of motion
     pos_dot = symbols.vel
     vel_dot = (
-        rot @ forces_motor_vec / mass
+        1 / mass * rot @ forces_motor_vec
         + gravity_vec
-        + 1 / mass * drag_linear_coef * symbols.vel
-        + 1 / mass * drag_square_coef * symbols.vel * cs.fabs(symbols.vel)
+        + 1 / mass * rot @ drag_matrix @ rot.T @ symbols.vel
     )
 
     ddrpy = rpy_coef * symbols.rpy + rpy_rates_coef * symbols.drpy + cmd_rpy_coef * cmd_rpy
