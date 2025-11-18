@@ -8,6 +8,7 @@
     <material name="silver" rgba="0.898 0.898 0.898 1"/>
     <material name="white" rgba="1 1 1 0.3"/>
     <material name="gold" rgba="0.969 0.878 0.6 1"/>
+    <material name="clear" rgba="1.0 1.0 1.0 0.0"/>
 
     <mesh name="pcb" file="cf2x/cf2x_pcb.stl" scale="0.001 0.001 0.001"/>
     <mesh name="motors" file="cf2x/cf2xL_motors.stl" scale="0.001 0.001 0.001"/>
@@ -18,6 +19,7 @@
     <mesh name="connector-pins" file="cf2x/cf2x_connector-pins.stl" scale="0.001 0.001 0.001"/>
     <mesh name="battery" file="cf2x/cf2x_battery.stl" scale="0.001 0.001 0.001"/>
     <mesh name="battery-holder" file="cf2x/cf2x_battery-holder.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="led-diffusor" file="cf21B/cf_led-diffusor.stl" scale="1e-3 1e-3 1e-3"/>
   </asset>
 
   <default>
@@ -45,6 +47,8 @@
       <geom mesh="connector-pins" material="gold" class="visual" />
       <geom mesh="battery" material="light-gray" class="visual" />
       <geom mesh="battery-holder" material="black" class="visual" />
+      <geom name="led_top" mesh="led-diffusor" material="clear" class="visual" pos="0 0 0.008"/>
+      <geom name="led_bot" mesh="led-diffusor" material="clear" class="visual" pos="0 0 -0.003" euler="180 0 0"/>
 
       <!-- Collision geometry is estimated based on the visual mesh. We use a sphere for maximum
        computational efficiency with larger swarms. Used by default-->
