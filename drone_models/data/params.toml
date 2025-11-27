@@ -2,9 +2,9 @@
 
 [cf2x_L250]
 gravity_vec = [0.0, 0.0, -9.81]
-mass = 0.03454
+mass = 0.0319
 L = 0.03253
-J = [ # TODO
+J = [  # TODO
     [16.8e-6, 0.0, 0.0],
     [0.0, 16.8e-6, 0.0],
     [0.0, 0.0, 29.8e-6]
@@ -12,14 +12,18 @@ J = [ # TODO
 rpm2thrust = [0.0, -5.382196214637237e-7, 2.4582929831265485e-10]
 rpm2torque = [0.0, 1.410454111996297e-9, 1.4592584373980652e-12] 
 thrust2torque = 0.007350862856566459
-# TODO: This is an arbitrary number that leads to a working simulation. It MUST be fitted and
-# updated as soon as possible.
-thrust_tau = 0.03 # TODO value?
-rotor_tau = 0.03 # TODO value?
+rotor_dyn_coef = [ 7.355623702172756, 0.0, 0.0, 0.00024443862952110715,] # [ 7.355623702172756, 0.0, 0.0, 0.00024443862952110715,]
+rotor_dyn_coef_simple = 6.886705423469015
+thrust_dyn_coef = 6.8932095506763345
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
     [-1.0,  1.0, -1.0,  1.0]
+]
+drag_matrix = [  # This term is from the so_rpy_rotor_drag model
+    [-0.01471782, 0.0,         0.0         ],
+    [0.0,         -0.01471782, 0.0         ],
+    [0.0,         0.0,         -0.01277641 ]
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
@@ -36,22 +40,28 @@ prop_inertia = 34.52e-9 # TODO seems off
 
 [cf2x_P250]
 gravity_vec = [0.0, 0.0, -9.81]
-mass = 0.03454
+mass = 0.0318
 L = 0.03253
-J = [ # TODO
-    [14e-6, 0.0,    0.0],
-    [0.0, 14e-6, 0.0],
-    [0.0, 0.0, 21.7e-6]
+J = [  # TODO from L250
+    [16.8e-6, 0.0, 0.0],
+    [0.0, 16.8e-6, 0.0],
+    [0.0, 0.0, 29.8e-6]
 ]
 rpm2thrust = [0.0, -3.6200226530383495e-7, 1.6060924304100328e-10] # Index is order
 rpm2torque = [0.0, -2.2665265829562245e-9, 1.1149485566919186e-12] # Index is order
 thrust2torque = 0.0069928948992470565
-thrust_tau = 0.138 # TODO value?
-rotor_tau = 0.138 # TODO value?
+rotor_dyn_coef = [ 5.172596691828673, 8.14774234381285e-5, 0.0, 0.0002095253491455741,]
+rotor_dyn_coef_simple = 7.709730027690284
+thrust_dyn_coef = 7.9435775497736785
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
     [-1.0,  1.0, -1.0,  1.0]
+]
+drag_matrix = [  # This term is from the so_rpy_rotor_drag model
+    [-0.01351483, 0.0,         0.0         ],
+    [0.0,         -0.01351483, 0.0         ],
+    [0.0,         0.0,         -0.01677452 ]
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
@@ -68,22 +78,28 @@ prop_inertia = 26.97e-9
 
 [cf2x_T350]
 gravity_vec = [0.0, 0.0, -9.81]
-mass = 0.037 # TODO
+mass = 0.0379
 L = 0.03253
-J = [ # TODO
-    [14e-6, 0.0,   0.0    ],
-    [0.0,   14e-6, 0.0    ],
-    [0.0,   0.0,   21.7e-6]
+J = [  # TODO from L250
+    [16.8e-6, 0.0, 0.0],
+    [0.0, 16.8e-6, 0.0],
+    [0.0, 0.0, 29.8e-6]
 ]
 rpm2thrust = [0.0, -7.167227176573658e-7, 2.9401303690194613e-10] # Index is order
 rpm2torque = [0.0, 5.815894847811497e-10, 1.331813874166509e-12] # Index is order
 thrust2torque = 0.005355990836477486
-thrust_tau = 0.09625268508006131
-rotor_tau = 0.0984319234122739
+rotor_dyn_coef = [ 11.374753209400291, 0.0, 0.0, 0.00037867688499079635,]
+rotor_dyn_coef_simple = 11.352970450445243
+thrust_dyn_coef = 11.12424272978587
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
     [-1.0,  1.0, -1.0,  1.0]
+]
+drag_matrix = [  # This term is from the so_rpy_rotor_drag model
+    [-0.01556697, 0.0,         0.0         ],
+    [0.0,         -0.01556697, 0.0         ],
+    [0.0,         0.0,         -0.02191672 ]
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
@@ -110,12 +126,18 @@ J = [
 rpm2thrust = [0.0, -3.133427287299859e-7, 4.407354891648379e-10] # TODO , Index is order
 rpm2torque = [0.0, 1.65886356219615e-9, 2.4693477924534137e-12] # TODO , Index is order
 thrust2torque = 0.00593893393599368
-thrust_tau = 0.06286705869479182
-rotor_tau = 0.06082197967926632
+rotor_dyn_coef = [ 13.996001897562685, 0.00011093207920685363, 5.933168530682111, 0.00031951312393561264,]
+rotor_dyn_coef_simple = 15.416891997523813
+thrust_dyn_coef = 15.09965949800411
 mixing_matrix = [
     [-1.0, -1.0,  1.0,  1.0],
     [-1.0,  1.0,  1.0, -1.0],
     [-1.0,  1.0, -1.0,  1.0]
+]
+drag_matrix = [  # This term is from the so_rpy_rotor_drag model
+    [-0.02149163, 0.0,          0.0         ],
+    [0.0,         -0.02149163,  0.0         ],
+    [0.0,         0.0,          -0.02359736 ]
 ]
 # The following parameters are for the platform, but are maybe not actually used by the models. However, 
 # we still keep them here in one place, since some other things (sim, estimator, firmware) might need them.
