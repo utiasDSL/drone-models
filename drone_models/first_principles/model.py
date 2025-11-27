@@ -36,8 +36,8 @@ def dynamics(
     rpm2thrust: Array,
     rpm2torque: Array,
     mixing_matrix: Array,
-    rotor_dyn_coef: Array,
     drag_matrix: Array,
+    rotor_dyn_coef: Array,
 ) -> tuple[Array, Array, Array, Array, Array | None]:
     r"""First principles model for a quatrotor.
 
@@ -57,14 +57,16 @@ def dynamics(
         dist_t: Disturbance torque (Nm) in the world frame acting on the CoM.
 
         mass: Mass of the drone (kg).
+        L: Distance from the CoM to the motor (m).
+        prop_inertia: Inertia of one propeller in z direction (kg m^2).
         gravity_vec: Gravity vector (m/s^2). We assume the gravity vector points downwards, e.g.
             [0, 0, -9.81].
         J: Inertia matrix (kg m^2).
         J_inv: Inverse inertia matrix (1/kg m^2).
         rpm2thrust: Propeller force constant (N min^2).
         rpm2torque: Propeller torque constant (Nm min^2).
-        L: Distance from the CoM to the motor (m).
         mixing_matrix: Mixing matrix denoting the turn direction of the motors (4x3).
+        drag_matrix: Drag matrix containing the linear drag coefficients (3x3).
         rotor_dyn_coef: Rotor dynamics coefficients.
 
     .. math::
