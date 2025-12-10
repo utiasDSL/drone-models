@@ -1,6 +1,6 @@
 [project]
 name = "drone_models"
-version = "0.1.0rc1"
+version = "0.1.0b"
 description = "Models of quadrotor drones for estimation and control tasks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -143,4 +143,5 @@ twine = "*"
 
 [tool.pixi.feature.dist.tasks]
 build = { cmd = "python -m build && twine check dist/*", description = "Build and test the package" }
-upload = { cmd = "twine upload -r testpypi dist/*", description = "Build and test the package" }
+upload_test = { cmd = "twine upload -r testpypi dist/*", description = "Test upload of the built package" }
+upload = { cmd = "twine upload dist/*", description = "Upload of the built package" }
