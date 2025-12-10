@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from types import ModuleType
 
-    from drone_models._typing import Array  # To be changed to a Protocol later (see array-api#589)
+    from drone_models._typing import Array  # To be changed to array_api_typing later
 
 
 def to_xp(*args: Any, xp: ModuleType, device: Any) -> tuple[Array, ...] | Array:

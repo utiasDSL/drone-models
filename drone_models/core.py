@@ -14,7 +14,7 @@ import numpy as np
 if TYPE_CHECKING:
     from types import ModuleType
 
-    from drone_models._typing import Array  # To be changed to a Protocol later (see array-api#589)
+    from drone_models._typing import Array  # To be changed to array_api_typing later
 
 
 F = TypeVar("F", bound=Callable[..., Any])

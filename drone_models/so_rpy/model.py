@@ -14,7 +14,7 @@ from drone_models.core import supports
 from drone_models.utils import rotation, to_xp
 
 if TYPE_CHECKING:
-    from drone_models._typing import Array  # To be changed to a Protocol later (see array-api#589)
+    from drone_models._typing import Array  # To be changed to array_api_typing later
 
 
 @supports(rotor_dynamics=False)
