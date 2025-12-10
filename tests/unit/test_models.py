@@ -22,7 +22,7 @@ from drone_models.so_rpy_rotor import dynamics as so_rpy_rotor_dynamics
 from drone_models.so_rpy_rotor_drag import dynamics as so_rpy_rotor_drag_dynamics
 
 if TYPE_CHECKING:
-    from array_api_typing import Array
+    from drone_models._typing import Array  # To be changed to a Protocol later (see array-api#589)
 
 # For all tests to pass, we need the same precsion in jax as in np
 jax.config.update("jax_enable_x64", True)

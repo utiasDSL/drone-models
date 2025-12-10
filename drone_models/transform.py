@@ -12,7 +12,7 @@ import array_api_extra as xpx
 from array_api_compat import array_namespace
 
 if TYPE_CHECKING:
-    from array_api_typing import Array
+    from drone_models._typing import Array  # To be changed to a Protocol later (see array-api#589)
 
 
 def motor_force2rotor_vel(motor_forces: Array, rpm2thrust: Array) -> Array:

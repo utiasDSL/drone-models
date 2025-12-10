@@ -1,9 +1,13 @@
 """Utility functions for the drone models."""
 
-from types import ModuleType
-from typing import Any
+from __future__ import annotations
 
-from array_api_typing import Array
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from types import ModuleType
+
+    from drone_models._typing import Array  # To be changed to a Protocol later (see array-api#589)
 
 
 def to_xp(*args: Any, xp: ModuleType, device: Any) -> tuple[Array, ...] | Array:

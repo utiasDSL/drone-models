@@ -19,7 +19,7 @@ dependencies = [
     "casadi>=3.7.0",
     "array-api-compat",
     "array-api-extra",
-    "array-api-typing @ git+https://github.com/data-apis/array-api-typing", # TODO: Replace with array-api-typing from pip once released
+    # "array-api-typing", To be added back in when properly released on pypi
 ]
 
 [tool.setuptools]
@@ -96,6 +96,7 @@ channels = ["conda-forge"]
 platforms = ["linux-64"]
 
 [tool.pixi.dependencies]
+pip = "*"
 ruff = "*"
 
 [tool.pixi.pypi-dependencies]
@@ -105,6 +106,7 @@ drone_models = { path = ".", editable = true }
 default = { solve-group = "default" }
 tests = { features = ["tests"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
+dist = { features = ["dist"], solve-group = "default" }
 
 # [tool.pixi.feature.tests]
 # system-requirements = { cuda = "12"}
@@ -135,4 +137,10 @@ mkdocs-section-index = "*"
 docs-serve = { cmd = "mkdocs serve", description = "Serve docs locally" }
 docs-build = { cmd = "mkdocs build", description = "Build docs" }
 
+[tool.pixi.feature.dist.pypi-dependencies]
+build = "*"
+twine = "*"
 
+[tool.pixi.feature.dist.tasks]
+build = { cmd = "python -m build && twine check dist/*", description = "Build and test the package" }
+upload = { cmd = "twine upload -r testpypi dist/*", description = "Build and test the package" }

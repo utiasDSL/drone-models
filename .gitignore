@@ -3,6 +3,7 @@
 **/*.egg-info
 .vscode/
 /build
+/dist
 # pixi environments
 .pixi
 *.egg-info
