@@ -2,6 +2,7 @@
 name = "drone_models"
 version = "0.1.0b"
 description = "Models of quadrotor drones for estimation and control tasks."
+authors = [{ name = "Marcel Rath" }, { name = "Martin Schuck" }]
 readme = "README.md"
 license = { file = "LICENSE" }
 classifiers = [
