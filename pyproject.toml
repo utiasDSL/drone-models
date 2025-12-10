@@ -1,6 +1,6 @@
 [project]
 name = "drone_models"
-version = "0.0.1"
+version = "0.1.0rc1"
 description = "Models of quadrotor drones for estimation and control tasks."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -15,11 +15,11 @@ classifiers = [
 
 dependencies = [
     "numpy>=2.0.0",
+    "scipy>=1.17.0rc1",
     "casadi>=3.7.0",
     "array-api-compat",
-    "scipy @ git+https://github.com/scipy/scipy.git@4cb83b6",               # TODO: Replace with scipy 1.17 once released
-    "array-api-typing @ git+https://github.com/data-apis/array-api-typing", # TODO: Replace with array-api-typing from pip once released
     "array-api-extra",
+    "array-api-typing @ git+https://github.com/data-apis/array-api-typing", # TODO: Replace with array-api-typing from pip once released
 ]
 
 [tool.setuptools]
@@ -90,12 +90,21 @@ line-ending = "auto"
 docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
+[tool.pixi]
 [tool.pixi.workspace]
 channels = ["conda-forge"]
 platforms = ["linux-64"]
 
+[tool.pixi.dependencies]
+ruff = "*"
+
 [tool.pixi.pypi-dependencies]
 drone_models = { path = ".", editable = true }
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+tests = { features = ["tests"], solve-group = "default" }
+docs = { features = ["docs"], solve-group = "default" }
 
 # [tool.pixi.feature.tests]
 # system-requirements = { cuda = "12"}
@@ -106,13 +115,7 @@ pytest-timeout = ">=2.1.0"
 pytest-cov = ">=6.0.0"
 array-api-strict = ">=2.4.1"
 
-# Adding jax as feature dependency is in conflict with the scipy dependency in the main project
-# because we are installing a preview version. Reaffirming the dependency on scipy makes jax and the
-# dev version work together. However, building scipy from git is only possible as a pypi dependency,
-# hence we need to move both jax and scipy to here.
-# TODO: Remove this once scipy 1.17 has been added with broadcasting.
 [tool.pixi.feature.tests.pypi-dependencies]
-scipy = { git = "https://github.com/scipy/scipy.git", rev = "4cb83b6" }
 jax = ">=0.7.0"
 
 [tool.pixi.feature.tests.tasks]
@@ -132,14 +135,4 @@ mkdocs-section-index = "*"
 docs-serve = { cmd = "mkdocs serve", description = "Serve docs locally" }
 docs-build = { cmd = "mkdocs build", description = "Build docs" }
 
-[tool.pixi.environments]
-default = { solve-group = "default" }
-tests = { features = ["tests"], solve-group = "default" }
-docs = { features = ["docs"], solve-group = "default" }
 
-[tool.pixi.dependencies]
-gcc = ">=15.1.0,<15.2"
-cxx-compiler = ">=1.0.0,<2"
-gfortran = ">=15.1.0,<15.2"
-openblas = ">=0.3.30,<0.4"
-ruff = "*"
