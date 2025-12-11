@@ -49,8 +49,8 @@
       <geom mesh="connector-pins" material="gold" class="visual" />
       <geom mesh="battery" material="light-gray" class="visual" />
       <geom mesh="battery-holder" material="black" class="visual" />
-      <geom name="led_top" mesh="led-diffusor" material="led_top" class="visual" pos="0 0 0.015"/>
-      <geom name="led_bot" mesh="led-diffusor" material="led_bot" class="visual" pos="0 0 -0.002" euler="180 0 0"/>
+      <geom name="led_top" mesh="led-diffusor" material="led_top" class="visual" pos="0 0 0.015" euler="180 0 0"/>
+      <geom name="led_bot" mesh="led-diffusor" material="led_bot" class="visual" pos="0 0 -0.002"/>
       
       <!-- Collision geometry is estimated based on the visual mesh. We use a sphere for maximum
        computational efficiency with larger swarms. Used by default-->
