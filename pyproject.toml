@@ -1,6 +1,6 @@
 [project]
 name = "drone_models"
-version = "0.1.0b"
+version = "0.1.0b0"
 description = "Models of quadrotor drones for estimation and control tasks."
 authors = [{ name = "Marcel Rath" }, { name = "Martin Schuck" }]
 readme = "README.md"
