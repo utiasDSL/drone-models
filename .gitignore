@@ -4,6 +4,7 @@
 .vscode/
 /build
 /dist
+/site
 # pixi environments
 .pixi
 *.egg-info

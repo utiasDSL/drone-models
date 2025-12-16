@@ -110,7 +110,7 @@ sys_id_translation(model="so_rpy_rotor_drag", mass=mass, data=data)
 sys_id_rotation(data=data)
 ```
 
-For more information on the identification process, check out our [API](TODO)
+For more information on the identification process, check out our [API](../reference/drone_models/index.md)
 
 ## Data-Driven Models
 
