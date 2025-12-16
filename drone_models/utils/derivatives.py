@@ -1,0 +1,192 @@
+"""This module contains functions to compute derivatives using State Variable Filters."""
+
+from __future__ import annotations
+
+import logging
+from typing import TYPE_CHECKING
+
+import numpy as np
+from scipy.integrate import solve_ivp
+from scipy.interpolate import interp1d
+from scipy.signal import bilinear, butter, filtfilt, lfilter, lfiltic
+from scipy.spatial.transform import Rotation as R
+
+from drone_models.utils.rotation import rpy_rates2ang_vel
+
+if TYPE_CHECKING:
+    from drone_models._typing import Array  # To be changed to array_api_typing later
+
+logger = logging.getLogger(__name__)
+
+
+def preprocessing(data: dict[str, Array], constants: dict[str, float]) -> dict[str, Array]:
+    """TODO."""
+    data["dt"] = np.diff(data["time"])
+    data["time"] -= data["time"][0]
+    ### Outlier detection + interpolation
+    b, a = butter(N=4, Wn=1, fs=1 / np.mean(data["dt"]))
+    residuals = data["pos"] - filtfilt(b, a, data["pos"], axis=0)
+    outliers = np.abs(residuals) > 0.3
+    outliers = np.sum(outliers, axis=-1)
+    is_outlier = np.asarray(outliers).astype(bool)
+    n_outliers = np.sum(outliers)
+    # TODO also check quat for outliers!
+
+    if n_outliers > 0:
+        logger.warning(f"{n_outliers} outliers detected. Interpolating")
+        time_good = data["time"][~is_outlier]
+        pos_good = data["pos"][~is_outlier]
+        quat_good = data["quat"][~is_outlier]
+        interp_pos = interp1d(time_good, pos_good, axis=0, fill_value="extrapolate")
+        interp_quat = interp1d(time_good, quat_good, axis=0, fill_value="extrapolate")
+        data["pos"][is_outlier] = interp_pos(data["time"][is_outlier])
+        data["quat"][is_outlier] = interp_quat(data["time"][is_outlier])
+
+    ### Normalizing orientation (assuming zero at start) and calculating rpy
+    time_span = 0.1
+    time_index = int(time_span / np.mean(data["dt"]))
+    quat_avg = np.mean(data["quat"][:time_index], axis=0)
+    quat_avg /= np.linalg.norm(quat_avg)
+    rot_corr = R.from_quat(quat_avg).inv()
+    rot = rot_corr * R.from_quat(data["quat"])
+    data["quat"] = rot.as_quat()
+    data["rpy"] = rot.as_euler("xyz")
+    data["z_axis"] = rot.inv().as_matrix()[..., -1, :]
+
+    ### Force clipping and vectorization
+    data["cmd_f"] = data["cmd_pwm"] / constants["PWM_MAX"] * constants["THRUST_MAX"] * 4
+    data["cmd_f"] = np.clip(data["cmd_f"], 0, constants["THRUST_MAX"] * 4)
+    data["cmd_pwm"] = np.clip(data["cmd_pwm"], constants["PWM_MIN"], constants["PWM_MAX"])
+    rot = R.from_quat(data["quat"])
+    zeros = np.zeros_like(data["cmd_f"])
+    f_cmd_vec = np.stack((zeros, zeros, data["cmd_f"]), axis=-1)
+    data["cmd_f_vec"] = rot.apply(f_cmd_vec)
+
+    ### Rotational error
+    R_act = rot.as_matrix()
+    R_des = R.from_euler("xyz", data["cmd_rpy"], degrees=True).as_matrix()
+    eRM = np.matmul(np.swapaxes(R_des, -1, -2), R_act) - np.matmul(
+        np.swapaxes(R_act, -1, -2), R_des
+    )
+    data["eR"] = np.stack(
+        (eRM[..., 2, 1], eRM[..., 0, 2], eRM[..., 1, 0]), axis=-1
+    )  # vee operator (SO3 to R3)
+    data["eR_vec"] = (rot.inv() * R.from_euler("xyz", data["cmd_rpy"], degrees=True)).as_rotvec()
+
+    return data
+
+
+def derivatives_svf(data: dict[str, Array], constants: dict[str, float]) -> dict[str, Array]:
+    """Calculate derivatives with State Variable Filter."""
+    # Important: Don't mix with unfiltered signals (also for input!)
+    if data is None:
+        return None
+
+    svf_linear = state_variable_filter(data["pos"].T, data["time"], f_c=6, N_deriv=3)
+    data["SVF_pos"] = svf_linear[:, 0].T
+    data["SVF_vel"] = svf_linear[:, 1].T
+    data["SVF_acc"] = svf_linear[:, 2].T
+    data["SVF_jerk"] = svf_linear[:, 3].T
+
+    svf_rotational = state_variable_filter(data["rpy"].T, data["time"], f_c=8, N_deriv=3)
+    data["SVF_rpy"] = svf_rotational[:, 0].T
+    data["SVF_drpy"] = svf_rotational[:, 1].T
+    data["SVF_ddrpy"] = svf_rotational[:, 2].T
+    data["SVF_dddrpy"] = svf_rotational[:, 3].T
+    rot = R.from_euler("xyz", data["SVF_rpy"])
+    data["SVF_quat"] = rot.as_quat()
+    data["SVF_z_axis"] = rot.inv().as_matrix()[..., -1, :]
+    data["SVF_ang_vel"] = rpy_rates2ang_vel(data["SVF_quat"], data["SVF_drpy"])
+    data["SVF_ang_acc"] = rpy_rates2ang_vel(data["SVF_quat"], data["SVF_ddrpy"])
+    data["SVF_ang_jerk"] = rpy_rates2ang_vel(data["SVF_quat"], data["SVF_dddrpy"])
+
+    svf_input_pwm = state_variable_filter(data["cmd_pwm"], data["time"], f_c=6, N_deriv=3)
+    data["SVF_cmd_pwm"] = svf_input_pwm[0]
+    data["SVF_cmd_f"] = data["SVF_cmd_pwm"] / constants["PWM_MAX"] * constants["THRUST_MAX"] * 4
+
+    svf_input_rpy = state_variable_filter(data["cmd_rpy"].T, data["time"], f_c=8, N_deriv=3)
+    data["SVF_cmd_rpy"] = svf_input_rpy[:, 0].T
+
+    R_act = rot.as_matrix()
+    rot_cmd = R.from_euler("xyz", data["SVF_cmd_rpy"], degrees=True)
+    R_des = rot_cmd.as_matrix()
+    eRM = np.matmul(np.swapaxes(R_des, -1, -2), R_act) - np.matmul(
+        np.swapaxes(R_act, -1, -2), R_des
+    )
+    data["SVF_eR"] = np.stack(
+        (eRM[..., 2, 1], eRM[..., 0, 2], eRM[..., 1, 0]), axis=-1
+    )  # vee operator (SO3 to R3)
+    data["SVF_eR_vec"] = (rot.inv() * rot_cmd).as_rotvec()
+
+    zeros = np.zeros_like(data["cmd_f"])
+    f_cmd_vec = np.stack((zeros, zeros, data["cmd_f"]), axis=-1)
+    data["SVF_cmd_f_vec"] = rot.apply(f_cmd_vec)
+
+    return data
+
+
+def state_variable_filter(y: Array, t: Array, f_c: float = 1, N_deriv: int = 2) -> Array:
+    """A state variable filter that low pass filters the signal and computes the derivatives.
+
+    Args:
+        y: The signal to be filtered. Can be 1D (signal_length) or 2D (batch_size, signal_length).
+        t: The time values for the signal. Optimally fixed sampling frequency.
+        f_c: Corner frequency of the filter in Hz. Defaults to 1.
+        N_deriv: Number of derivatives to be computed. Defaults to 2.
+
+    Returns:
+        Array: The filtered signal and its derivatives. Shape (batch_size, N_deriv+1, signal_length).
+    """
+    if y.ndim == 1:
+        y = y[None, :]  # Add batch dimension if single signal
+    batch_size, signal_length = y.shape
+
+    # The filter needs to have a minimum of two extra states
+    # One for the filtered input signal and one for the actual filter
+    N_ord = N_deriv + 2
+    omega_c = 2 * np.pi * f_c
+    f_s = 1 / np.mean(np.diff(t))
+
+    b, a = butter(N=N_ord, Wn=omega_c, analog=True)
+    b_dig, a_dig = bilinear(b, a, fs=f_s)
+    a_flipped = np.flip(a)
+
+    def _f(t: Array, x: Array, u: Array) -> Array:
+        x_dot = []
+        x_dot_last = 0
+        # The first states are a simple integrator chain
+        for i in np.arange(1, N_ord):
+            x_dot.append(x[i])
+        # Last state uses the filter coefficients
+        for i in np.arange(0, N_ord):
+            x_dot_last -= a_flipped[i] * x[i]
+        x_dot_last += b[0] * u(t)
+        x_dot.append(x_dot_last)
+
+        return x_dot
+
+    results = np.zeros((batch_size, N_deriv + 1, signal_length))
+
+    for i in range(batch_size):
+        # Define input
+        # Prefilter input backwards to remove time shift
+        # Add padding to remove filter oscillations in data
+        pad = 100
+        y_backwards = np.flip(y[i], axis=-1)
+        y_backwards_padded = np.concatenate([np.ones(pad) * y_backwards[0], y_backwards])
+        zi = lfiltic(
+            b_dig, a_dig, y_backwards_padded, x=y_backwards_padded
+        )  # initial filter conditions
+        y_backwards, _ = lfilter(b_dig, a_dig, y_backwards_padded, axis=-1, zi=zi)
+        u = interp1d(
+            t, np.flip(y_backwards[pad:], axis=-1), kind="linear", fill_value="extrapolate"
+        )
+
+        # Solve system with initial conditions
+        x0 = np.zeros(N_ord)
+        x0[0] = y[i, 0]
+        sol = solve_ivp(_f, [t[0], t[-1]], x0, t_eval=t, args=(u,))
+
+        results[i] = sol.y[:-1]  # Last state is not of interest
+
+    return results.squeeze()  # Remove batch dim if not needed
