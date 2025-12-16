@@ -87,9 +87,27 @@ balanced_model = parametrize(so_rpy_rotor_dynamics, "cf2x_L250")
 - Measure parameters, such as mass
 - Fit model to a few minutes of flight data
 
+You can use the given pixi environment, which can be activated with `pixi shell -e sysid`. An example is given below:
+
 ```python
-from drone_models.utils.identification import sys_id_lin 
-#TODO
+from drone_models.utils.identification import sys_id_rotation, sys_id_translation
+
+# Your observations as a dict
+data = {
+    "time": time,
+    "pos": pos,
+    "quat": quat,
+    "cmd_rpy": cmd_rpy,
+    "cmd_f": cmd_f,
+}
+
+# Preprocessing and derivatives computation 
+data = preprocessing(data)
+data = derivatives_svf(data)
+
+# Actual sysid scripts
+sys_id_translation(model="so_rpy_rotor_drag", mass=mass, data=data)
+sys_id_rotation(data=data)
 ```
 
 For more information on the identification process, check out our [API](TODO)

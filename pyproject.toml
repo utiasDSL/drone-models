@@ -23,6 +23,12 @@ dependencies = [
     # "array-api-typing", To be added back in when properly released on pypi
 ]
 
+[project.optional-dependencies]
+sysid = [
+    "matplotlib",
+    "jax >= 0.7",
+]
+
 [tool.setuptools]
 include-package-data = true
 
@@ -108,7 +114,8 @@ drone_models = { path = ".", editable = true }
 
 [tool.pixi.environments]
 default = { solve-group = "default" }
-tests = { features = ["tests"], solve-group = "default" }
+sysid = { features = ["sysid"], solve-group = "default" }
+tests = { features = ["tests", "sysid"], solve-group = "default" }
 docs = { features = ["docs"], solve-group = "default" }
 dist = { features = ["dist"], solve-group = "default" }
 
