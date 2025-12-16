@@ -19,8 +19,19 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def preprocessing(data: dict[str, Array], constants: dict[str, float]) -> dict[str, Array]:
-    """TODO."""
+def preprocessing(data: dict[str, Array]) -> dict[str, Array]:
+    """Applies preprocessing to collected data.
+
+    The preprocessing includes
+        outlier detection and interpolation,
+        normalizing orientation (assuming hover at start),
+        calculating rpy from quaternions,
+        and calculating rotational error
+
+    Args:
+        data: The raw data dictionary containing
+              time [s], pos [m], quat, cmd_rpy [rad], cmd_f [N].
+    """
     data["dt"] = np.diff(data["time"])
     data["time"] -= data["time"][0]
     ### Outlier detection + interpolation
@@ -53,30 +64,22 @@ def preprocessing(data: dict[str, Array], constants: dict[str, float]) -> dict[s
     data["rpy"] = rot.as_euler("xyz")
     data["z_axis"] = rot.inv().as_matrix()[..., -1, :]
 
-    ### Force clipping and vectorization
-    data["cmd_f"] = data["cmd_pwm"] / constants["PWM_MAX"] * constants["THRUST_MAX"] * 4
-    data["cmd_f"] = np.clip(data["cmd_f"], 0, constants["THRUST_MAX"] * 4)
-    data["cmd_pwm"] = np.clip(data["cmd_pwm"], constants["PWM_MIN"], constants["PWM_MAX"])
-    rot = R.from_quat(data["quat"])
-    zeros = np.zeros_like(data["cmd_f"])
-    f_cmd_vec = np.stack((zeros, zeros, data["cmd_f"]), axis=-1)
-    data["cmd_f_vec"] = rot.apply(f_cmd_vec)
-
     ### Rotational error
+    rot = R.from_quat(data["quat"])
     R_act = rot.as_matrix()
-    R_des = R.from_euler("xyz", data["cmd_rpy"], degrees=True).as_matrix()
+    R_des = R.from_euler("xyz", data["cmd_rpy"], degrees=False).as_matrix()
     eRM = np.matmul(np.swapaxes(R_des, -1, -2), R_act) - np.matmul(
         np.swapaxes(R_act, -1, -2), R_des
     )
     data["eR"] = np.stack(
         (eRM[..., 2, 1], eRM[..., 0, 2], eRM[..., 1, 0]), axis=-1
     )  # vee operator (SO3 to R3)
-    data["eR_vec"] = (rot.inv() * R.from_euler("xyz", data["cmd_rpy"], degrees=True)).as_rotvec()
+    data["eR_vec"] = (rot.inv() * R.from_euler("xyz", data["cmd_rpy"], degrees=False)).as_rotvec()
 
     return data
 
 
-def derivatives_svf(data: dict[str, Array], constants: dict[str, float]) -> dict[str, Array]:
+def derivatives_svf(data: dict[str, Array]) -> dict[str, Array]:
     """Calculate derivatives with State Variable Filter."""
     # Important: Don't mix with unfiltered signals (also for input!)
     if data is None:
@@ -100,15 +103,13 @@ def derivatives_svf(data: dict[str, Array], constants: dict[str, float]) -> dict
     data["SVF_ang_acc"] = rpy_rates2ang_vel(data["SVF_quat"], data["SVF_ddrpy"])
     data["SVF_ang_jerk"] = rpy_rates2ang_vel(data["SVF_quat"], data["SVF_dddrpy"])
 
-    svf_input_pwm = state_variable_filter(data["cmd_pwm"], data["time"], f_c=6, N_deriv=3)
-    data["SVF_cmd_pwm"] = svf_input_pwm[0]
-    data["SVF_cmd_f"] = data["SVF_cmd_pwm"] / constants["PWM_MAX"] * constants["THRUST_MAX"] * 4
-
+    svf_input_f = state_variable_filter(data["cmd_f"], data["time"], f_c=6, N_deriv=3)
+    data["SVF_cmd_f"] = svf_input_f[0]
     svf_input_rpy = state_variable_filter(data["cmd_rpy"].T, data["time"], f_c=8, N_deriv=3)
     data["SVF_cmd_rpy"] = svf_input_rpy[:, 0].T
 
     R_act = rot.as_matrix()
-    rot_cmd = R.from_euler("xyz", data["SVF_cmd_rpy"], degrees=True)
+    rot_cmd = R.from_euler("xyz", data["SVF_cmd_rpy"])
     R_des = rot_cmd.as_matrix()
     eRM = np.matmul(np.swapaxes(R_des, -1, -2), R_act) - np.matmul(
         np.swapaxes(R_act, -1, -2), R_des
@@ -117,10 +118,6 @@ def derivatives_svf(data: dict[str, Array], constants: dict[str, float]) -> dict
         (eRM[..., 2, 1], eRM[..., 0, 2], eRM[..., 1, 0]), axis=-1
     )  # vee operator (SO3 to R3)
     data["SVF_eR_vec"] = (rot.inv() * rot_cmd).as_rotvec()
-
-    zeros = np.zeros_like(data["cmd_f"])
-    f_cmd_vec = np.stack((zeros, zeros, data["cmd_f"]), axis=-1)
-    data["SVF_cmd_f_vec"] = rot.apply(f_cmd_vec)
 
     return data
 

@@ -22,7 +22,9 @@ from drone_models.utils.rotation import (  # noqa: F401
 if TYPE_CHECKING:
     from drone_models._typing import Array  # To be changed to array_api_typing later
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 # Remove unused parameters by partial application to make code cleaner
 dynamics_translation = partial(
@@ -96,7 +98,6 @@ def _simulate_system_translation(
             drag_matrix=jnp.diag(jnp.array([params[2], params[2], params[3]])),
             cmd_f_coef=params[0],
         )
-        # TODO so_rpy case (no rotor dynamics)
         x_next = jnp.where(params[1] == 0.0, u[-1], carry + rotor_vel_dot * dt_step)
         return x_next, x_next
 
@@ -198,7 +199,19 @@ def sys_id_translation(
     verbose: int = 0,
     plot: bool = False,
 ) -> dict[str, Array]:
-    """Identify the linear part of the so_rpy model from data."""
+    """Identify the translational part of the so_rpy model from data.
+
+    Args:
+        model: Model type to identify.
+        mass: Mass of the drone.
+        data: Training data containing time, and the SVF values of vel, acc, quat, cmd_f.
+        data_validation: Optional validation data containing the same fields as data.
+        gravity: Gravity vector in world frame, i.e., [0, 0, -9.81].
+        verbose: Verbosity level for the optimizer from 0 to 2.
+        plot: Whether to plot the results.
+
+    Returns: Identified model parameters.
+    """
     theta0 = [1.0, 1.0, 0.0, 0.0]
     method = "trf"
     xtol, ftol, gtol = 1e-10, 1e-10, 1e-10
@@ -210,6 +223,7 @@ def sys_id_translation(
     quat = jnp.array(data["SVF_quat"])
     cmd_f = jnp.array(data["SVF_cmd_f"])
 
+    # Identification
     residual_fun_trans, residual_fun_trans_jac = _build_residuals_fun_translation(model)
     res = least_squares(
         residual_fun_trans,
@@ -248,16 +262,18 @@ def sys_id_translation(
         )
 
     # Report
-    logger.info(f"\n=== Stats {model} ===")
-    logger.info(f"Parameters: {params=}")
-    logger.info(f"\nTraining success={res.success}, results:")
-    logger.info(f"RMSE={_rmse(acc, acc_pred):.6f}")
-    logger.info(f"R^2={_r2(acc, acc_pred):.4f}")
+    txt = f"\n=== Stats {model} ==="
+    txt += f"\nParameters: {params=}"
+    txt += f"\nTraining success={res.success}, results:"
+    txt += f"\nRMSE={_rmse(acc, acc_pred):.6f}"
+    txt += f"\nR^2={_r2(acc, acc_pred):.4f}"
     if data_validation is not None:
-        logger.info("\nValidation results:")
-        logger.info(f"RMSE={_rmse(acc_valid, acc_pred_valid):.6f}")
-        logger.info(f"R^2={_r2(acc_valid, acc_pred_valid):.4f}")
+        txt += "\nValidation results:"
+        txt += f"\nRMSE={_rmse(acc_valid, acc_pred_valid):.6f}"
+        txt += f"\nR^2={_r2(acc_valid, acc_pred_valid):.4f}"
+    logger.info(txt)
 
+    # Plotting
     if plot:
         # Plot acceleration
         fig, axs = plt.subplots(2, 1, figsize=(12, 5))
@@ -314,7 +330,6 @@ def _simulate_system_rotation(cmd_rpy: Array, t: Array, params: Array) -> Array:
     """
     cmd = jnp.concatenate([cmd_rpy, jnp.zeros((cmd_rpy.shape[0], 1))], axis=-1)
     dt = jnp.diff(t)
-    # x0 = (jnp.zeros(3), jnp.zeros(3))
     x0 = jnp.zeros((2, 3))  # rpy, rpy_rates
 
     def _step_so_system(carry: Array, inputs: Array) -> tuple:
@@ -323,23 +338,26 @@ def _simulate_system_rotation(cmd_rpy: Array, t: Array, params: Array) -> Array:
         rpy_rates_coef = jnp.array([params[2], params[2], params[3]])
         cmd_rpy_coef = jnp.array([params[4], params[4], params[5]])
         rpy, rpy_rates = carry[0], carry[1]
-        ### Alternative 1: Using the actual model
-        # quat = R.from_euler("xyz", rpy).as_quat()
-        # ang_vel = rpy_rates2ang_vel(quat, rpy_rates)
-        # _, _, _, ang_acc, _ = dynamics_rotation(
-        #     pos=jnp.array([0.0, 0.0, 0.0]),
-        #     quat=quat,
-        #     vel=jnp.array([0.0, 0.0, 0.0]),
-        #     ang_vel=ang_vel,
-        #     cmd=cmd,
-        #     rotor_vel=jnp.array([0.0]),
-        #     rpy_coef=jnp.array([params[0], params[0], params[1]]),
-        #     rpy_rates_coef=jnp.array([params[2], params[2], params[3]]),
-        #     cmd_rpy_coef=jnp.array([params[4], params[4], params[5]]),
-        # )
-        # drpy_rates = ang_vel_deriv2rpy_rates_deriv(quat, ang_vel, ang_acc)
+
+        ### Alternative 1: Using the actual model (slower)
+        quat = R.from_euler("xyz", rpy).as_quat()
+        ang_vel = rpy_rates2ang_vel(quat, rpy_rates)
+        _, _, _, ang_acc, _ = dynamics_rotation(
+            pos=jnp.array([0.0, 0.0, 0.0]),
+            quat=quat,
+            vel=jnp.array([0.0, 0.0, 0.0]),
+            ang_vel=ang_vel,
+            cmd=cmd,
+            rotor_vel=jnp.array([0.0]),
+            rpy_coef=rpy_coef,
+            rpy_rates_coef=rpy_rates_coef,
+            cmd_rpy_coef=cmd_rpy_coef,
+        )
+        drpy_rates = ang_vel_deriv2rpy_rates_deriv(quat, ang_vel, ang_acc)
         ### Alternative 2: Using the 2nd-order part directly (faster)
-        drpy_rates = rpy_coef * rpy + rpy_rates_coef * rpy_rates + cmd_rpy_coef * cmd[:-1]
+        # drpy_rates = rpy_coef * rpy + rpy_rates_coef * rpy_rates + cmd_rpy_coef * cmd[:-1]
+
+        ### Integration
         next_rpy = rpy + rpy_rates * dt_step
         next_rpy_rates = rpy_rates + drpy_rates * dt_step
         x_next = jnp.stack([next_rpy, next_rpy_rates], axis=0)
@@ -357,14 +375,16 @@ def _build_residuals_fun_rotation() -> tuple[Callable, Callable]:
 
     def _residuals_rot(params: Array, cmd_rpy: Array, t: Array, rpy_observed: Array) -> Array:
         rpy = _simulate_system_rotation(cmd_rpy, t, params)
-        return jnp.linalg.norm(rpy_observed - rpy, axis=-1)
+        # return jnp.linalg.norm(rpy_observed - rpy, axis=-1)
+        return jnp.reshape(rpy_observed - rpy, (-1,))
 
     # JAX analytic Jacobian
     jac_fun = jax.jacfwd(_residuals_rot)  # Jacobian w.r.t. first arg (params)
     jac_fun = jax.jit(jac_fun)
 
     def _residual_fun_rot(params: Array, cmd_rpy: Array, t: Array, rpy_observed: Array) -> Callable:
-        return jax.device_get(_residuals_rot(params, cmd_rpy, t, rpy_observed))
+        residuals = jax.jit(_residuals_rot)
+        return jax.device_get(residuals(params, cmd_rpy, t, rpy_observed))
 
     def _residual_fun_rot_jac(
         params: Array, cmd_rpy: Array, t: Array, rpy_observed: Array
@@ -379,23 +399,30 @@ def sys_id_rotation(
     data_validation: dict[str, Array] | None = None,
     verbose: int = 0,
     plot: bool = False,
-):
-    """Identify the linear part of the so_rpy model from data."""
+) -> dict[str, Array]:
+    """Identify the rotational part of the so_rpy model from data.
+
+    Args:
+        data: Training data containing time, and the SVF values of rpy [rad], cmd_rpy [rad].
+        data_validation: Optional validation data containing the same fields as data.
+        verbose: Verbosity level for the optimizer from 0 to 2.
+        plot: Whether to plot the results.
+
+    Returns: Identified model parameters.
+    """
     # theta includes the values for roll/pitch (same value) and yaw
     theta0 = np.array([-10.0, -10.0, -1.0, -1.0, 10.0, 10.0])  # ry, ry_rates, cmd_ry
     method = "trf"
     xtol, ftol, gtol = 1e-10, 1e-10, 1e-10
     t = jnp.array(data["time"])
     rpy = jnp.array(data["SVF_rpy"])
-    cmd_rpy = jnp.array(data["SVF_cmd_rpy"] * np.pi / 180)
+    cmd_rpy = jnp.array(data["SVF_cmd_rpy"])
     if data_validation is not None:
         t_valid = jnp.array(data_validation["time"])
         rpy_valid = jnp.array(data_validation["SVF_rpy"])
-        cmd_rpy_valid = jnp.array(data_validation["SVF_cmd_rpy"] * np.pi / 180)
+        cmd_rpy_valid = jnp.array(data_validation["SVF_cmd_rpy"])
 
-    ###################################################################
-    ############## Identification of roll and pitch dynamics
-    ###################################################################
+    # Identification
     residual_fun_rot, residual_fun_rot_jac = _build_residuals_fun_rotation()
     res = least_squares(
         residual_fun_rot,
@@ -406,100 +433,70 @@ def sys_id_rotation(
         xtol=xtol,
         ftol=ftol,
         gtol=gtol,
-        max_nfev=1000,
         verbose=verbose,
     )
     theta = res.x
-    rpy_coef, rpy_rates_coef, cmd_rpy_coef = theta[0:2], theta[2:4], theta[4:6]
 
-    rpy_pred = _simulate_system_rotation(t, cmd_rpy, (rpy_coef, rpy_rates_coef, cmd_rpy_coef))
+    rpy_coef = np.array([theta[0], theta[0], theta[1]])
+    rpy_rates_coef = np.array([theta[2], theta[2], theta[3]])
+    cmd_rpy_coef = np.array([theta[4], theta[4], theta[5]])
+    params = {"rpy_coef": rpy_coef, "rpy_rates_coef": rpy_rates_coef, "cmd_rpy_coef": cmd_rpy_coef}
+
+    rpy_pred = _simulate_system_rotation(cmd_rpy, t, theta)
     if data_validation is not None:
-        rpy_pred_valid = _simulate_system_rotation(
-            t_valid, cmd_rpy_valid, (rpy_coef, rpy_rates_coef, cmd_rpy_coef)
-        )
+        rpy_pred_valid = _simulate_system_rotation(cmd_rpy_valid, t_valid, theta)
 
     # Report
-    logger.info("\n=== Stats roll & pitch ===")
-    logger.info(f"Estimated:  {rpy_coef=:.4f}, {rpy_rates_coef=:.4f}, {cmd_rpy_coef=:.4f}")
-    logger.info(f"Training success={res.success}, results:")
-    logger.info(f"RMSE roll={_rmse(rpy[..., 0], rpy_pred[..., 0]):.6f}")
-    logger.info(f"RMSE pitch={_rmse(rpy[..., 1], rpy_pred[..., 1]):.6f}")
-    logger.info(f"R^2 roll={_r2(rpy[..., 0], rpy_pred[..., 0]):.4f}")
-    logger.info(f"R^2 pitch={_r2(rpy[..., 1], rpy_pred[..., 1]):.4f}")
+    txt = "\n=== Stats roll & pitch ==="
+    txt += f"\nEstimated:  {rpy_coef=}, {rpy_rates_coef=}, {cmd_rpy_coef=}"
+    txt += f"\nTraining success={res.success}, results:"
+    txt += f"\nRMSE={_rmse(rpy, rpy_pred):.6f}"
+    txt += f"\nR^2={_r2(rpy, rpy_pred):.4f}"
+
     if data_validation is not None:
-        logger.info("\nValidation results:")
-        logger.info(f"RMSE roll={_rmse(rpy_valid[..., 0], rpy_pred_valid[..., 0]):.6f}")
-        logger.info(f"RMSE pitch={_rmse(rpy_valid[..., 1], rpy_pred_valid[..., 1]):.6f}")
-        logger.info(f"R^2 roll={_r2(rpy_valid[..., 0], rpy_pred_valid[..., 0]):.4f}")
-        logger.info(f"R^2 pitch={_r2(rpy_valid[..., 1], rpy_pred_valid[..., 1]):.4f}")
+        txt += "\nValidation results:"
+        txt += f"\nRMSE roll={_rmse(rpy_valid[..., 0], rpy_pred_valid[..., 0]):.6f}"
+        txt += f"\nRMSE pitch={_rmse(rpy_valid[..., 1], rpy_pred_valid[..., 1]):.6f}"
+        txt += f"\nR^2 roll={_r2(rpy_valid[..., 0], rpy_pred_valid[..., 0]):.4f}"
+        txt += f"\nR^2 pitch={_r2(rpy_valid[..., 1], rpy_pred_valid[..., 1]):.4f}"
+    logger.info(txt)
 
-    ###################################################################
-    ############## Identification of yaw dynamics
-    ###################################################################
-    # res = least_squares(
-    #     residual_fun_numpy,
-    #     x0=theta0,
-    #     jac=jac_fun_numpy,
-    #     args=(t, cmd_rpy[..., 2], rpy[..., 2]),
-    #     method=method,
-    #     xtol=xtol,
-    #     ftol=ftol,
-    #     gtol=gtol,
-    #     verbose=verbose,
-    # )
-    # a0, a1, b = res.x
-    # yaw = _simulate_system_rotation(t, cmd_rpy[..., 2], (a0, a1, b))
+    # Plotting
+    if plot:
+        fig, axs = plt.subplots(3, 2, figsize=(20, 12))
+        plt.suptitle("RPY dynamics fit")
 
-    # if data_validation is not None:
-    #     yaw_valid = _simulate_system_rotation(t_valid, cmd_rpy_valid[..., 2], (a0, a1, b))
+        axs[0, 0].plot(t, rpy[..., 0], label="Measured roll")
+        axs[0, 0].plot(t, rpy_pred[..., 0], "--", label="Predicted roll")
+        axs[0, 0].set_ylabel("Roll [rad]")
 
-    # # Report
-    # logger.info("\n=== Stats yaw ===")
-    # logger.info(f"Init guess: a0={theta0[0]:.4f}, a1={theta0[1]:.4f}, b={theta0[2]:.4f}")
-    # logger.info(f"Estimated:  a0={a0:.4f}, a1={a1:.4f}, b={b:.4f}")
-    # logger.info(f"\nTraining success={res.success}, results:")
-    # logger.info(f"RMSE yaw={_rmse(rpy[..., 2], y_python_yaw):.6f}")
-    # logger.info(f"R^2 yaw={_r2(rpy[..., 2], y_python_yaw):.4f}")
-    # logger.info("\nValidation results:")
-    # logger.info(f"RMSE yaw={_rmse(rpy_valid[..., 2], y_python_valid_yaw):.6f}")
-    # logger.info(f"R^2 yaw={_r2(rpy_valid[..., 2], y_python_valid_yaw):.4f}")
+        axs[0, 1].plot(t_valid, rpy_valid[..., 0], label="Measured roll (valid)")
+        axs[0, 1].plot(t_valid, rpy_pred_valid[..., 0], "--", label="Predicted roll (valid)")
+        axs[0, 1].set_ylabel("Roll [rad]")
 
-    ###################################################################
-    ############## Plotting
-    ###################################################################
-    # if plot:
-    #     fig, axs = plt.subplots(3, 2, figsize=(20, 12))
-    #     plt.suptitle(f"RPY dynamics fit for {drone} on {date}")
+        axs[1, 0].plot(t, rpy[..., 1], label="Measured pitch")
+        axs[1, 0].plot(t, rpy_pred[..., 1], "--", label="Predicted pitch")
+        axs[1, 0].set_ylabel("Pitch [rad]")
 
-    #     axs[0, 0].plot(t, rpy[..., 0], label="Measured roll")
-    #     axs[0, 0].plot(t, roll, "--", label="Predicted roll")
-    #     axs[0, 0].set_ylabel("Roll [rad]")
+        axs[1, 1].plot(t_valid, rpy_valid[..., 1], label="Measured pitch (valid)")
+        axs[1, 1].plot(t_valid, rpy_pred_valid[..., 1], "--", label="Predicted pitch (valid)")
+        axs[1, 1].set_ylabel("Pitch [rad]")
 
-    #     axs[0, 1].plot(t_valid, rpy_valid[..., 0], label="Measured roll (valid)")
-    #     axs[0, 1].plot(t_valid, y_python_valid_roll, "--", label="Predicted roll (valid)")
-    #     axs[0, 1].set_ylabel("Roll [rad]")
+        axs[2, 0].plot(t, rpy[..., 2], label="Measured yaw")
+        axs[2, 0].plot(t, rpy_pred[..., 2], "--", label="Predicted yaw")
+        axs[2, 0].set_xlabel("Time [s]")
+        axs[2, 0].set_ylabel("Yaw [rad]")
 
-    #     axs[1, 0].plot(t, rpy[..., 1], label="Measured pitch")
-    #     axs[1, 0].plot(t, pitch, "--", label="Predicted pitch")
-    #     axs[1, 0].set_ylabel("Pitch [rad]")
+        axs[2, 1].plot(t_valid, rpy_valid[..., 2], label="Measured yaw (valid)")
+        axs[2, 1].plot(t_valid, rpy_pred_valid[..., 2], "--", label="Predicted yaw (valid)")
+        axs[2, 1].set_xlabel("Time [s]")
+        axs[2, 1].set_ylabel("Yaw [rad]")
 
-    #     axs[1, 1].plot(t_valid, rpy_valid[..., 1], label="Measured pitch (valid)")
-    #     axs[1, 1].plot(t_valid, y_python_valid_pitch, "--", label="Predicted pitch (valid)")
-    #     axs[1, 1].set_ylabel("Pitch [rad]")
+        for ax in axs.flat:
+            ax.grid(True)
+            ax.legend()
 
-    #     axs[2, 0].plot(t, rpy[..., 2], label="Measured yaw")
-    #     axs[2, 0].plot(t, y_python_yaw, "--", label="Predicted yaw")
-    #     axs[2, 0].set_xlabel("Time [s]")
-    #     axs[2, 0].set_ylabel("Yaw [rad]")
+        plt.tight_layout()
+        plt.show()
 
-    #     axs[2, 1].plot(t_valid, rpy_valid[..., 2], label="Measured yaw (valid)")
-    #     axs[2, 1].plot(t_valid, y_python_valid_yaw, "--", label="Predicted yaw (valid)")
-    #     axs[2, 1].set_xlabel("Time [s]")
-    #     axs[2, 1].set_ylabel("Yaw [rad]")
-
-    #     for ax in axs.flat:
-    #         ax.grid(True)
-    #         ax.legend()
-
-    #     plt.tight_layout()
-    #     plt.show()
+    return params
