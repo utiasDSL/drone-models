@@ -14,7 +14,7 @@ from array_api_compat import array_namespace
 from scipy.spatial.transform import Rotation as R
 
 if TYPE_CHECKING:
-    from array_api_strict import Array
+    from drone_models._typing import Array  # To be changed to array_api_typing later
 
 # region Numeric
 

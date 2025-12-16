@@ -4,12 +4,12 @@ Drone Models provides several model types with different complexity levels and c
 
 ## Model Types Overview
 
-| Model | Rotor Dynamics | Complexity | Physics Level | Best For |
-|-------|----------------|------------|---------------|----------|
-| `first_principles` | Yes | High | Full rigid body | High-fidelity simulation, MPC |
-| `so_rpy` | No | Low | Simplified | Fast simulation, learning |
-| `so_rpy_rotor` | Yes | Medium | Simplified + rotors | Balanced performance |
-| `so_rpy_rotor_drag` | Yes | High | Simplified + effects | High-speed flight |
+| Model               | Rotor Dynamics | Complexity | Physics Level        | Best For                      |
+| ------------------- | -------------- | ---------- | -------------------- | ----------------------------- |
+| `first_principles`  | Yes            | High       | Full rigid body      | High-fidelity simulation, MPC |
+| `so_rpy`            | No             | Low        | Simplified           | Fast simulation, learning     |
+| `so_rpy_rotor`      | Yes            | Medium     | Simplified + rotors  | Balanced performance          |
+| `so_rpy_rotor_drag` | Yes            | High       | Simplified + effects | High-speed flight             |
 
 ## Physics-Based Models
 
@@ -18,6 +18,7 @@ Drone Models provides several model types with different complexity levels and c
 The most comprehensive model based on full rigid body dynamics with quaternion representation.
 
 **Features:**
+
 - Quaternion-based attitude representation (no singularities)
 - Full 6-DOF rigid body dynamics  
 - Rotor spin-up dynamics with time constants
@@ -25,8 +26,8 @@ The most comprehensive model based on full rigid body dynamics with quaternion r
 - Mixing matrix for arbitrary motor configurations
 
 **When to use:**
+
 - High-fidelity simulations
-- Model Predictive Control (MPC)
 - Research requiring accurate dynamics
 - Hardware-in-the-loop testing
 
@@ -42,6 +43,12 @@ pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
     pos, quat, vel, ang_vel, cmd, rotor_vel=rotor_vel
 )
 ```
+
+**How to obtain:**
+
+- Measure parameters, such as mass
+- Obtain thrust curves from experiments
+- Identify inertia either from flight or other experiments
 
 ### SO(3) Roll-Pitch-Yaw Models
 
@@ -62,11 +69,7 @@ Simplified models using Euler angle representation for faster computation.
 - Most complete simplified model
 - Better at high speeds
 
-**When to use:**
-- Real-time applications requiring speed
-- Reinforcement learning training
-- Educational demonstrations
-- Rapid prototyping
+**When to use:** Real-time applications requiring speed, e.g., model based control
 
 ```python
 from drone_models.so_rpy import dynamics as so_rpy_dynamics
@@ -78,6 +81,18 @@ basic_model = parametrize(so_rpy_dynamics, "cf2x_L250")
 # Balanced model with rotor dynamics
 balanced_model = parametrize(so_rpy_rotor_dynamics, "cf2x_L250")
 ```
+
+**How to obtain:**
+
+- Measure parameters, such as mass
+- Fit model to a few minutes of flight data
+
+```python
+from drone_models.utils.identification import sys_id_lin 
+#TODO
+```
+
+For more information on the identification process, check out our [API](TODO)
 
 ## Data-Driven Models
 
