@@ -16,7 +16,7 @@ classifiers = [
 
 dependencies = [
     "numpy>=2.0.0",
-    "scipy>=1.17.0rc1",
+    "scipy>=1.17.0",
     "casadi>=3.7.0",
     "array-api-compat",
     "array-api-extra",
