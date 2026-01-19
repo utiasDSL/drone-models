@@ -137,6 +137,7 @@ tests = { cmd = "pytest -v tests", description = "Run tests" }
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"
 mkdocs-material = "*"
+docutils = "*"
 
 [tool.pixi.feature.docs.pypi-dependencies]
 mkdocstrings = { version = "*", extras = ["python"] }

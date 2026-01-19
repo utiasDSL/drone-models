@@ -1,4 +1,18 @@
-"""TODO."""
+r"""Numeric and symbolic model of the so_rpy model.
+
+.. math::
+    \begin{align}
+        \dot{\mathbf{p}} &= \mathbf{v}, \\
+        m\dot{\mathbf{v}} &= \mathbf{f}_\mathrm{g} + \mathbf{f}_\mathrm{t} + \mathbf{f}_\mathrm{a} \\
+        \dot{\Omega} &= \frac{1}{c_3} (\Omega_{\mathrm{cmd}} - \Omega), \\
+        \ddot{\bm{\Psi}} &= \bm{c}_4 \bm{\Psi} + \bm{c}_5 \dot{\bm{\Psi}} + \bm{c}_6 \bm{\Psi}_\mathrm{cmd},
+    \end{align}
+    \\ \text{where} \\
+    \begin{align}
+        \mathbf{f}_\mathrm{g} &= m \begin{bmatrix} 0\\0\\-g \end{bmatrix}, \\
+        \mathbf{f}_\mathrm{t} &= \mathbf{R}(\bm{\Psi}) \begin{bmatrix} 0\\0\\c_1 \Omega_{\mathrm{cmd}}^2 \end{bmatrix}, \\
+    \end{align}
+"""
 
 from __future__ import annotations
 
@@ -124,9 +138,26 @@ def symbolic_dynamics(
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """Fitted model with linear, second order rpy dynamics.
 
-    For info on the args, see above.
-
     This wrapper converts the actual symbolic model, defined below, into the quat and ang_vel form.
+
+    Args:
+        model_rotor_vel: Whether the rotor dynamics should be accounted for.
+        model_dist_f: Whether to use the disturbance force in the dynamics.
+        model_dist_t: Whether to use the disturbance torque in the dynamics.
+
+        mass: Mass of the drone (kg).
+        gravity_vec: Gravity vector (m/s^2). We assume the gravity vector points downwards, e.g.
+            [0, 0, -9.81].
+        J: Inertia matrix (kg m^2).
+        J_inv: Inverse inertia matrix (1/kg m^2).
+        acc_coef: Coefficient for the acceleration (1/s^2).
+        cmd_f_coef: Coefficient for the collective thrust (N/rad^2).
+        rpy_coef: Coefficient for the roll pitch yaw dynamics (1/s).
+        rpy_rates_coef: Coefficient for the roll pitch yaw rates dynamics (1/s^2).
+        cmd_rpy_coef: Coefficient for the roll pitch yaw command dynamics (1/s).
+
+    Returns:
+        CasADi variables of (X_dot, X, U, Y)
     """
     # We need to set the rpy and drpy symbols before building the euler model
     symbols.rpy = rotation.cs_quat2euler(symbols.quat)
@@ -200,9 +231,26 @@ def symbolic_dynamics_euler(
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """The fitted linear, second order rpy dynamics.
 
-    For info on the args, see above.
-
     This function returns the actual model, as defined in the paper, for direct use.
+
+    Args:
+        model_rotor_vel: Whether the rotor dynamics should be accounted for.
+        model_dist_f: Whether to use the disturbance force in the dynamics.
+        model_dist_t: Whether to use the disturbance torque in the dynamics.
+
+        mass: Mass of the drone (kg).
+        gravity_vec: Gravity vector (m/s^2). We assume the gravity vector points downwards, e.g.
+            [0, 0, -9.81].
+        J: Inertia matrix (kg m^2).
+        J_inv: Inverse inertia matrix (1/kg m^2).
+        acc_coef: Coefficient for the acceleration (1/s^2).
+        cmd_f_coef: Coefficient for the collective thrust (N/rad^2).
+        rpy_coef: Coefficient for the roll pitch yaw dynamics (1/s).
+        rpy_rates_coef: Coefficient for the roll pitch yaw rates dynamics (1/s^2).
+        cmd_rpy_coef: Coefficient for the roll pitch yaw command dynamics (1/s).
+
+    Returns:
+        CasADi variables of (X_dot, X, U, Y)
     """
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.rpy, symbols.vel, symbols.drpy)

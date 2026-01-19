@@ -77,12 +77,14 @@ The versatility of the package makes it suitable for simulation applications, co
 
 ## Model Portfolio
 
-| Model Type | Rotor Dynamics | Complexity | Best For |
-|------------|----------------|------------|----------|
-| `first_principles` | Yes | High | Accurate simulation |
-| `so_rpy` | No | Low | Fast simulation, learning |
-| `so_rpy_rotor` | Yes | Medium | Balanced performance, MPC |
-| `so_rpy_rotor_drag` | Yes | High | High-speed flight modeling |
+| Model Type          | Rotor Dynamics | Complexity | Best For                   |
+| ------------------- | -------------- | ---------- | -------------------------- |
+| `first_principles`  | Yes            | High       | Accurate simulation        |
+| `so_rpy`            | No             | Low        | Fast simulation, learning  |
+| `so_rpy_rotor`      | Yes            | Medium     | Balanced performance, MPC  |
+| `so_rpy_rotor_drag` | Yes            | High       | High-speed flight modeling |
+
+Explore detailed pages for each model: [Models](models/index.md)
 
 ## Getting Started
 

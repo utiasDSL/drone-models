@@ -1,4 +1,19 @@
-"""TODO."""
+r"""Numeric and symbolic model of the so_rpy_rotor_drag model.
+
+.. math::
+    \begin{align}
+        \dot{\mathbf{p}} &= \mathbf{v}, \\
+        m\dot{\mathbf{v}} &= \mathbf{f}_\mathrm{g} + \mathbf{f}_\mathrm{t} + \mathbf{f}_\mathrm{a} \\
+        \dot{\Omega} &= \frac{1}{c_3} (\Omega_{\mathrm{cmd}} - \Omega), \\
+        \ddot{\bm{\Psi}} &= \bm{c}_4 \bm{\Psi} + \bm{c}_5 \dot{\bm{\Psi}} + \bm{c}_6 \bm{\Psi}_\mathrm{cmd},
+    \end{align}
+    \\ \text{where} \\
+    \begin{align}
+        \mathbf{f}_\mathrm{g} &= m \begin{bmatrix} 0\\0\\-g \end{bmatrix}, \\
+        \mathbf{f}_\mathrm{t} &= \mathbf{R}(\bm{\Psi}) \begin{bmatrix} 0\\0\\c_1 \Omega^2 \end{bmatrix}, \\
+        \mathbf{f}_\mathrm{a} &= \mathbf{R}(\bm{\Psi}) \, \diag(\bm{c}_2) \mathbf{R}(\bm{\Psi})^\top \mathbf{v}.
+    \end{align}
+"""
 
 from __future__ import annotations
 

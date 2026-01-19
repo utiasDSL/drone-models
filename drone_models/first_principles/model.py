@@ -1,4 +1,37 @@
-"""TODO."""
+r"""Numeric and symbolic model of the first principles model.
+
+.. math::
+    \begin{align}
+        \dot{\mathbf{p}} &= \mathbf{v}, \\
+        \dot{\mathbf{q}} &= \frac{1}{2} \bm{\Xi}({}^{\mathcal{B}}\bm{\omega})\mathbf{q}, \\
+        m\dot{\mathbf{v}} &= \mathbf{f}_\mathrm{g} + \mathbf{R} \, {}^{\mathcal{B}}\mathbf{f}_\mathrm{t} + \mathbf{R}\,{}^{\mathcal{B}}\mathbf{f}_\mathrm{a}, \\
+        \mathbf{J} \, {}^{\mathcal{B}}\dot{\bm{\omega}} &= {}^{\mathcal{B}}\mathbf{t}_\mathrm{t} + {}^{\mathcal{B}}\mathbf{t}_\mathrm{d} + {}^{\mathcal{B}}\mathbf{t}_\mathrm{i} - {}^{\mathcal{B}}\bm{\omega}\times\mathbf{J} \, {}^{\mathcal{B}} \bm{\omega}, \\
+        J_p\dot{\bm{\Omega}} &= k_m? (\bm{\Omega}_{\mathrm{cmd}} - \bm{\Omega}) - k_v\bm{\Omega} - k_d\bm{\Omega}^2,
+    \end{align}
+    \\ \text{where} \mathbf{R} = {}^{\mathcal{I}}\mathbf{R}_{\mathcal{B}}(\mathbf{q}) \text{and} \\
+    \begin{align}
+        \mathbf{f}_\mathrm{g} &= m\begin{bmatrix} 0\\0\\-g \end{bmatrix}, \\
+        {}^{\mathcal{B}} \mathbf{f}_\mathrm{t} &= \mathbf{R} \begin{bmatrix} 0\\0\\\sum_{i=1}^4 k_t \Omega_i^2 \end{bmatrix}, \\
+        {}^{\mathcal{B}} \mathbf{f}_\mathrm{a} &= \diag(\bm{c}_2) \mathbf{R}^\top \mathbf{v}, \\
+        {}^{\mathcal{B}}\mathbf{t}_\mathrm{t} &= \frac{l}{\sqrt{2}} 
+        \begin{bmatrix} 
+            -k_t & -k_t & k_t & k_t \\
+            -k_t & k_t & k_t & -k_t\\
+            0 & 0 & 0 & 0
+        \end{bmatrix} \bm{\Omega}^2 \\
+        {}^{\mathcal{B}}\mathbf{t}_\mathrm{d} &=  
+        \begin{bmatrix} 
+            0 & 0 & 0 & 0 \\
+            0 & 0 & 0 & 0\\
+            -k_d & k_d & -k_d & k_d
+        \end{bmatrix} \bm{\Omega}^2 \\
+        {}^{\mathcal{B}}\mathbf{t}_\mathrm{i} &= J_p \begin{bmatrix} 
+            {}^{\mathcal{B}}\dot\omega_y (\Omega_1 - \Omega_2 + \Omega_3 - \Omega_4) \\
+            {}^{\mathcal{B}}\dot\omega_x (\Omega_1 - \Omega_2 + \Omega_3 - \Omega_4) \\
+            - \dot{\Omega}_1 + \dot{\Omega}_2 - \dot{\Omega}_3 + \dot{\Omega}_4
+        \end{bmatrix}
+    \end{align}
+"""
 
 from __future__ import annotations
 
@@ -68,9 +101,6 @@ def dynamics(
         mixing_matrix: Mixing matrix denoting the turn direction of the motors (4x3).
         drag_matrix: Drag matrix containing the linear drag coefficients (3x3).
         rotor_dyn_coef: Rotor dynamics coefficients.
-
-    .. math::
-        \sum_{i=1}^{\\infty} x_{i} TODO
 
     Warning:
         Do not use quat_dot directly for integration! Only usage of ang_vel is mathematically correct.
