@@ -237,6 +237,7 @@ def sys_id_translation(
         verbose=verbose,
     )
 
+    # Storing values as dict
     theta = res.x
     params = {"cmd_f_coef": theta[0]}
     if "rotor" in model:
@@ -250,6 +251,7 @@ def sys_id_translation(
         theta[2] = 0.0
         theta[3] = 0.0
 
+    # Rollout for evaluation
     acc_pred = _simulate_system_translation(quat, vel, cmd_f, t, theta, constants)
     if data_validation is not None:
         t_valid = jnp.array(data_validation["time"])
@@ -301,15 +303,74 @@ def sys_id_translation(
         # Plot commanded thrust vs actual thrust
         fig, ax = plt.subplots(1, 1, figsize=(6, 6))
 
+        acc_preprocessed = acc - constants["gravity_vec"]
+        if "drag" in model:
+            # remove expected drag term from observed acceleration
+            rot_mat = R.from_quat(quat).as_matrix()
+            drag_matrix = np.diag(
+                jnp.array([params["drag_xy_coef"], params["drag_xy_coef"], params["drag_z_coef"]])
+            )
+            acc_preprocessed -= (
+                1 / mass * (rot_mat.mT @ (drag_matrix @ (rot_mat @ vel[..., None])))[..., 0]
+            )
+        if "rotor" in model:
+            # add expected motor delay to cmd_f
+            actual_f = np.array(cmd_f)
+            dt = np.diff(t)
+            for i in range(1, len(cmd_f)):
+                actual_f[i] = (
+                    actual_f[i - 1]
+                    + 1 / params["thrust_time_coef"] * (cmd_f[i - 1] - actual_f[i - 1]) * dt[i - 1]
+                )
+            cmd_f = actual_f
         ax.scatter(
-            cmd_f, np.linalg.norm((acc - constants["gravity_vec"]) * constants["mass"], axis=-1)
+            cmd_f,
+            np.linalg.norm(acc_preprocessed * constants["mass"], axis=-1),
+            label="Training Data",
         )
+        if data_validation is not None:
+            acc_valid_preprocessed = acc_valid - constants["gravity_vec"]
+            if "drag" in model:
+                # remove expected drag term from observed acceleration
+                rot_mat = R.from_quat(quat_valid).as_matrix()
+                drag_matrix = np.diag(
+                    jnp.array(
+                        [params["drag_xy_coef"], params["drag_xy_coef"], params["drag_z_coef"]]
+                    )
+                )
+                acc_valid_preprocessed -= (
+                    1
+                    / mass
+                    * (rot_mat.mT @ (drag_matrix @ (rot_mat @ vel_valid[..., None])))[..., 0]
+                )
+            if "rotor" in model:
+                # add expected motor delay to cmd_f
+                actual_f = np.array(cmd_f_valid)
+                dt = np.diff(t_valid)
+                for i in range(1, len(cmd_f_valid)):
+                    actual_f[i] = (
+                        actual_f[i - 1]
+                        + 1
+                        / params["thrust_time_coef"]
+                        * (cmd_f_valid[i - 1] - actual_f[i - 1])
+                        * dt[i - 1]
+                    )
+                cmd_f_valid = actual_f
+            ax.scatter(
+                cmd_f_valid,
+                np.linalg.norm(acc_valid_preprocessed * constants["mass"], axis=-1),
+                c="tab:orange",
+                marker="x",
+                s=50,
+                label="Validation Data",
+            )
         cmd_thrust_lin = np.linspace(np.min(cmd_f) * 0.9, np.max(cmd_f) * 1.1, 1000)
         ax.plot(cmd_thrust_lin, theta[0] * cmd_thrust_lin, label="Fit")
-        ax.set_xlabel("Commanded Thrust [N]")
+        ax.set_xlabel("Commanded Thrust (after dynamics) [N]")
         ax.set_ylabel("Actual Thrust [N]")
         ax.set_xlim(0.1, 0.8)
         ax.set_ylim(0.1, 0.8)
+        ax.legend()
 
         plt.tight_layout()
         plt.show()
@@ -447,6 +508,7 @@ def sys_id_rotation(
         rpy_pred_valid = _simulate_system_rotation(cmd_rpy_valid, t_valid, theta)
 
     # Report
+    # Note that this RMSE and R2 calculation is not correct (assuming linear rpy angles)
     txt = "\n=== Stats roll & pitch ==="
     txt += f"\nEstimated:  {rpy_coef=}, {rpy_rates_coef=}, {cmd_rpy_coef=}"
     txt += f"\nTraining success={res.success}, results:"
@@ -455,10 +517,8 @@ def sys_id_rotation(
 
     if data_validation is not None:
         txt += "\nValidation results:"
-        txt += f"\nRMSE roll={_rmse(rpy_valid[..., 0], rpy_pred_valid[..., 0]):.6f}"
-        txt += f"\nRMSE pitch={_rmse(rpy_valid[..., 1], rpy_pred_valid[..., 1]):.6f}"
-        txt += f"\nR^2 roll={_r2(rpy_valid[..., 0], rpy_pred_valid[..., 0]):.4f}"
-        txt += f"\nR^2 pitch={_r2(rpy_valid[..., 1], rpy_pred_valid[..., 1]):.4f}"
+        txt += f"\nRMSE={_rmse(rpy_valid, rpy_pred_valid):.6f}"
+        txt += f"\nR^2={_r2(rpy_valid, rpy_pred_valid):.4f}"
     logger.info(txt)
 
     # Plotting

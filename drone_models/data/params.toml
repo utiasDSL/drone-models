@@ -2,7 +2,7 @@
 
 [cf2x_L250]
 gravity_vec = [0.0, 0.0, -9.81]
-mass = 0.0319
+mass = 0.0328
 L = 0.03253
 J = [  # TODO
     [16.8e-6, 0.0, 0.0],
@@ -116,7 +116,7 @@ prop_inertia = 38.93e-9 # TODO value from B500, currenty unknown
 
 [cf21B_500]
 gravity_vec = [0.0, 0.0, -9.81]
-mass = 0.04338
+mass = 0.044
 L = 0.035355
 J = [
     [25e-6, 0.0,   0.0],
