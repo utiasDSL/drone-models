@@ -40,7 +40,7 @@ State vector layout with `model_rotor_vel=True`:
 | 10–12 | `ang_vel` | rad/s |
 | 13–16 | `rotor_vel` | RPM |
 
-See the [`first_principles` API reference](../reference/drone_models/first_principles/) for the full list of accepted parameters.
+See the [`first_principles` API reference](../reference/drone_models/first_principles/index.md) for the full list of accepted parameters.
 
 ## Fitted models — quaternion form
 

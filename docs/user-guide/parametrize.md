@@ -14,7 +14,7 @@ print(list(model.keywords.keys()))
 #  'rpm2thrust', 'rpm2torque', 'mixing_matrix', 'rotor_dyn_coef', 'drag_matrix']
 ```
 
-See the [`parametrize` API reference](../reference/drone_models/) for the full signature.
+See the [`parametrize` API reference](../reference/drone_models/index.md) for the full signature.
 
 ## Available drone configurations
 
@@ -110,7 +110,7 @@ print(params["mass"])        # 0.0319
 print(params["rpm2thrust"])  # array([...])
 ```
 
-See the [`load_params` API reference](../reference/drone_models/core/) for details.
+See the [`load_params` API reference](../reference/drone_models/core.md) for details.
 
 ---
 

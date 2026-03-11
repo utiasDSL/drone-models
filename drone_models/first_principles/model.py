@@ -7,8 +7,8 @@ and requires no data fitting.  Propeller gyroscopic effects are included.
 
 The command interface is four motor angular velocities in RPM.
 
-Both a numeric implementation (:func:`dynamics`) and a symbolic CasADi
-implementation (:func:`symbolic_dynamics`) are provided.
+Both a numeric implementation ([dynamics][drone_models.first_principles.dynamics]) and a symbolic CasADi
+implementation ([symbolic_dynamics][drone_models.first_principles.symbolic_dynamics]) are provided.
 """
 
 from __future__ import annotations
@@ -52,9 +52,11 @@ def dynamics(
 ) -> tuple[Array, Array, Array, Array, Array | None]:
     r"""First principles model for a quatrotor.
 
-    The input consists of four forces in [N]. TODO more detail.
+    The command is four motor angular velocities in RPM. Forces and torques are
+    computed internally using quadratic thrust and torque curves, the mixing matrix,
+    and the motor arm length.
 
-    Based on the quaternion model from https://www.dynsyslab.org/wp-content/papercite-data/pdf/mckinnon-robot20.pdf
+    Based on the quaternion model from <https://www.dynsyslab.org/wp-content/papercite-data/pdf/mckinnon-robot20.pdf>
 
     Args:
         pos: Position of the drone (m).
@@ -80,13 +82,11 @@ def dynamics(
         drag_matrix: Drag matrix containing the linear drag coefficients (3x3).
         rotor_dyn_coef: Rotor dynamics coefficients.
 
-    .. math::
-        \sum_{i=1}^{\\infty} x_{i} TODO
 
     Warning:
         Do not use quat_dot directly for integration! Only usage of ang_vel is mathematically correct.
         If you still decide to use quat_dot to integrate, ensure unit length!
-        More information https://ahrs.readthedocs.io/en/latest/filters/angular.html
+        More information: <https://ahrs.readthedocs.io/en/latest/filters/angular.html>
     """
     xp = array_namespace(pos)
     mass, L, prop_inertia, gravity_vec, rpm2thrust, rpm2torque = to_xp(
@@ -174,7 +174,7 @@ def symbolic_dynamics(
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """Return CasADi symbolic expressions for the first-principles model.
 
-    Implements the same dynamics as :func:`dynamics` using CasADi ``MX``
+    Implements the same dynamics as [dynamics][drone_models.first_principles.dynamics] using CasADi ``MX``
     symbolic expressions, validated to be numerically equivalent.
 
     Args:

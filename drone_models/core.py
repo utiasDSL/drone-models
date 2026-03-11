@@ -33,7 +33,7 @@ def supports(rotor_dynamics: bool = True) -> Callable[[F], F]:
       ``UserWarning`` is issued and the commanded value is used directly.
 
     The decorator also attaches a ``__drone_model_features__`` attribute to the
-    wrapper, which :func:`~drone_models.model_features` reads.
+    wrapper, which [model_features][drone_models.model_features] reads.
 
     Args:
         rotor_dynamics: Whether the decorated function models rotor velocity

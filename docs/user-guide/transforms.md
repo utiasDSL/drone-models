@@ -4,7 +4,7 @@ These utilities sit below the dynamics models and deal with the physical convers
 
 ## Motor and rotor conversions
 
-These functions live in [`drone_models.transform`](../reference/drone_models/transform/) and convert between motor RPM, body forces, body torques, and PWM.
+These functions live in [`drone_models.transform`](../reference/drone_models/transform.md) and convert between motor RPM, body forces, body torques, and PWM.
 
 ### `motor_force2rotor_vel`
 
@@ -64,7 +64,7 @@ All four functions support batched inputs: leading batch dimensions are broadcas
 
 ## Rotation utilities
 
-These functions live in [`drone_models.utils.rotation`](../reference/drone_models/utils/rotation/) and convert between angular velocity representations. They are useful when mixing models that use different rotational state variables, or when implementing a state estimator that works in Euler angles while the model uses quaternions.
+These functions live in [`drone_models.utils.rotation`](../reference/drone_models/utils/rotation.md) and convert between angular velocity representations. They are useful when mixing models that use different rotational state variables, or when implementing a state estimator that works in Euler angles while the model uses quaternions.
 
 ```python
 from drone_models.utils.rotation import (
@@ -82,4 +82,4 @@ All three support arbitrary leading batch dimensions on `quat` and `ang_vel` / `
 
 ---
 
-For worked examples that tie these concepts together, see the [Examples](../examples/index.md) page. For the complete function signatures and docstrings, see the [API reference](../reference/).
+For worked examples that tie these concepts together, see the [Examples](../examples/index.md) page. For the complete function signatures and docstrings, see the [API reference](../reference/drone_models/index.md).

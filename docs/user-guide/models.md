@@ -39,7 +39,7 @@ pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
 )
 ```
 
-See the [`first_principles` API reference](../reference/drone_models/first_principles/) for the full parameter list.
+See the [`first_principles` API reference](../reference/drone_models/first_principles/index.md) for the full parameter list.
 
 ## so_rpy_rotor_drag
 
@@ -88,7 +88,7 @@ pos_dot, quat_dot, vel_dot, ang_vel_dot, _ = model(
 
 ## Checking rotor dynamics support
 
-If you are writing code that works with multiple models, `model_features` tells you programmatically whether a given dynamics function supports rotor dynamics. See the [`model_features` API reference](../reference/drone_models/) for details.
+If you are writing code that works with multiple models, `model_features` tells you programmatically whether a given dynamics function supports rotor dynamics. See the [`model_features` API reference](../reference/drone_models/index.md) for details.
 
 ```python
 from drone_models import model_features

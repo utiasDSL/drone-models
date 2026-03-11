@@ -1,7 +1,7 @@
 """Available drone configurations with pre-fitted parameters.
 
-Each string in :data:`available_drones` is a valid ``drone_model`` argument for
-:func:`~drone_models.core.parametrize` and :func:`~drone_models.core.load_params`.
+Each string in [available_drones][drone_models.drones.available_drones] is a valid ``drone_model`` argument for
+[parametrize][drone_models.core.parametrize] and [load_params][drone_models.core.load_params].
 The corresponding parameter files live in ``drone_models/data/params.toml`` (physical
 parameters) and in each model sub-package's ``params.toml`` (fitted coefficients).
 

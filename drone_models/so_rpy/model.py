@@ -7,8 +7,8 @@ thrust command.  No motor spin-up dynamics are modelled.
 
 The command interface is ``[roll_rad, pitch_rad, yaw_rad, thrust_N]``.
 
-Both a numeric implementation (:func:`dynamics`) and symbolic CasADi implementations
-(:func:`symbolic_dynamics`, :func:`symbolic_dynamics_euler`) are provided.
+Both a numeric implementation ([dynamics][drone_models.so_rpy.dynamics]) and symbolic CasADi implementations
+([symbolic_dynamics][drone_models.so_rpy.symbolic_dynamics], [symbolic_dynamics_euler][drone_models.so_rpy.symbolic_dynamics_euler]) are provided.
 """
 
 from __future__ import annotations
@@ -135,9 +135,9 @@ def symbolic_dynamics(
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
     """Return CasADi symbolic expressions for the so_rpy model in quaternion form.
 
-    Internally delegates to :func:`symbolic_dynamics_euler` and converts the
+    Internally delegates to [symbolic_dynamics_euler][drone_models.so_rpy.symbolic_dynamics_euler] and converts the
     Euler-angle state to quaternion + angular-velocity state so that the
-    interface matches that of :func:`~drone_models.first_principles.symbolic_dynamics`.
+    interface matches that of [symbolic_dynamics][drone_models.first_principles.symbolic_dynamics].
 
     Args:
         model_rotor_vel: If ``True``, a scalar rotor-velocity state is appended

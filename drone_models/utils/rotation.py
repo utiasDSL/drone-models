@@ -1,8 +1,4 @@
-"""In this file, some important rotations from scipy.spatial.transform.rotation are reimplemented in the Array API to be useable with jax, numpy, etc.
-
-https://github.com/scipy/scipy/blob/main/scipy/spatial/transform/_rotation.pyx
-https://github.com/jax-ml/jax/blob/main/jax/_src/scipy/spatial/transform.py
-"""
+"""Rotation utilities for handling quaternion and Euler angle derivative conversions."""
 
 from __future__ import annotations
 
@@ -105,8 +101,9 @@ def rpy_rates2ang_vel(quat: Array, rpy_rates: Array) -> Array:
 def ang_vel_deriv2rpy_rates_deriv(quat: Array, ang_vel: Array, ang_vel_deriv: Array) -> Array:
     r"""Convert rpy rates derivatives to angular velocity derivatives.
 
-    .. math::
-        \dot{\psi} = \mathbf{\dot{W}}\mathbf{\omega} + \mathbf{W} \dot{\mathbf{\omega}}
+    \[
+    \dot{\psi} = \mathbf{\dot{W}}\mathbf{\omega} + \mathbf{W} \dot{\mathbf{\omega}}
+    \]
     """
     xp = quat.__array_namespace__()
     rpy = R.from_quat(quat).as_euler("xyz")
@@ -150,8 +147,9 @@ def ang_vel_deriv2rpy_rates_deriv(quat: Array, ang_vel: Array, ang_vel_deriv: Ar
 def rpy_rates_deriv2ang_vel_deriv(quat: Array, rpy_rates: Array, rpy_rates_deriv: Array) -> Array:
     r"""Convert rpy rates derivatives to angular velocity derivatives.
 
-    .. math::
-        \dot{\omega} = \mathbf{\dot{W}}\dot{\mathbf{\psi}} + \mathbf{W} \ddot{\mathbf{\psi}}
+    \[
+    \dot{\omega} = \mathbf{\dot{W}}\dot{\mathbf{\psi}} + \mathbf{W} \ddot{\mathbf{\psi}}
+    \]
     """
     xp = quat.__array_namespace__()
     rpy = R.from_quat(quat).as_euler("xyz")
@@ -316,7 +314,7 @@ def cs_quat2euler(quat: cs.MX, seq: str = "xyz", degrees: bool = False) -> cs.MX
 def cs_quat2matrix(quat: cs.MX) -> cs.MX:
     """Creates a symbolic rotation matrix based on a symbolic quaternion.
 
-    From https://github.com/cmower/spatial-casadi/blob/master/spatial_casadi/spatial.py
+    From <https://github.com/cmower/spatial-casadi/blob/master/spatial_casadi/spatial.py>
     """
     x = quat[0] / cs.norm_2(quat)
     y = quat[1] / cs.norm_2(quat)
@@ -347,8 +345,7 @@ def cs_quat2matrix(quat: cs.MX) -> cs.MX:
 def cs_rpy2matrix(rpy: cs.MX, degrees: bool = False) -> cs.MX:
     """Creates a symbolic rotation matrix from roll, pitch, yaw (XYZ convention).
 
-    Should be equivalent to scipy.spatial.transform.Rotation.from_euler('xyz', rpy).as_matrix()
-    TODO write tests!!
+    Should be equivalent to scipy.spatial.transform.Rotation.from_euler('xyz', rpy).as_matrix().
     """
     roll, pitch, yaw = rpy[0], rpy[1], rpy[2]
     if degrees:

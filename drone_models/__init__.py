@@ -4,8 +4,8 @@ This package provides numeric and symbolic quadrotor dynamics models at multiple
 fidelity levels. Models are pure functions compatible with any Array API backend
 (NumPy, JAX, PyTorch, etc.) and with CasADi for symbolic computation.
 
-Use :func:`parametrize` to bind a dynamics function to a named drone configuration,
-and :data:`available_models` to enumerate all registered models.
+Use [parametrize][drone_models.parametrize] to bind a dynamics function to a named drone configuration,
+and [available_models][drone_models.available_models] to enumerate all registered models.
 """
 
 import os
@@ -47,12 +47,12 @@ available_models: dict[str, Callable] = {
 def model_features(model: Callable) -> dict[str, bool]:
     """Return the feature flags declared by a dynamics function.
 
-    Feature flags are set by the :func:`~drone_models.core.supports` decorator on each
+    Feature flags are set by the [supports][drone_models.core.supports] decorator on each
     dynamics function and describe which optional inputs the model accepts.
 
     Args:
         model: A dynamics function, or a ``functools.partial`` wrapping one (as
-            returned by :func:`parametrize`).
+            returned by [parametrize][drone_models.parametrize]).
 
     Returns:
         A dict of feature names to booleans. Currently contains:

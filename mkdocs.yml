@@ -66,7 +66,8 @@ plugins:
             show_source: true
             docstring_style: google
             merge_init_into_class: true
-            show_submodules: true
+            show_submodules: false
+            show_attribute_values: false
 
 nav:
   - Home: index.md
@@ -83,15 +84,10 @@ nav:
   - Examples: examples/index.md
   - API Reference:
     - drone_models: reference/drone_models/index.md
-    - Models:
-      - first_principles: reference/drone_models/first_principles/index.md
-      - first_principles.model: reference/drone_models/first_principles/model.md
-      - so_rpy: reference/drone_models/so_rpy/index.md
-      - so_rpy.model: reference/drone_models/so_rpy/model.md
-      - so_rpy_rotor: reference/drone_models/so_rpy_rotor/index.md
-      - so_rpy_rotor.model: reference/drone_models/so_rpy_rotor/model.md
-      - so_rpy_rotor_drag: reference/drone_models/so_rpy_rotor_drag/index.md
-      - so_rpy_rotor_drag.model: reference/drone_models/so_rpy_rotor_drag/model.md
+    - first_principles: reference/drone_models/first_principles/index.md
+    - so_rpy_rotor_drag: reference/drone_models/so_rpy_rotor_drag/index.md
+    - so_rpy_rotor: reference/drone_models/so_rpy_rotor/index.md
+    - so_rpy: reference/drone_models/so_rpy/index.md
     - Core:
       - core: reference/drone_models/core.md
       - drones: reference/drone_models/drones.md

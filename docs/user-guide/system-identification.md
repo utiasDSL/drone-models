@@ -12,7 +12,7 @@ pixi shell -e sysid
 
 ## Required data format
 
-The pipeline expects a Python dict of NumPy arrays assembled from your flight log. The keys below are required by [`preprocessing`](../reference/drone_models/utils/data_utils/):
+The pipeline expects a Python dict of NumPy arrays assembled from your flight log. The keys below are required by [`preprocessing`](../reference/drone_models/utils/data_utils.md):
 
 | Key | Shape | Units | Description |
 |---|---|---|---|
@@ -22,7 +22,7 @@ The pipeline expects a Python dict of NumPy arrays assembled from your flight lo
 | `"cmd_rpy"` | `(N, 3)` | rad | Commanded roll/pitch/yaw |
 | `"cmd_f"` | `(N,)` | N | Commanded collective thrust |
 
-After `preprocessing` + [`derivatives_svf`](../reference/drone_models/utils/data_utils/), the dict is augmented with filtered signals and numerical derivatives. The identification functions read `SVF_vel`, `SVF_acc`, `SVF_quat`, `SVF_cmd_f` (translation) and `SVF_rpy`, `SVF_cmd_rpy` (rotation).
+After `preprocessing` + [`derivatives_svf`](../reference/drone_models/utils/data_utils.md), the dict is augmented with filtered signals and numerical derivatives. The identification functions read `SVF_vel`, `SVF_acc`, `SVF_quat`, `SVF_cmd_f` (translation) and `SVF_rpy`, `SVF_cmd_rpy` (rotation).
 
 ## Full pipeline
 
@@ -61,24 +61,22 @@ rot_params = sys_id_rotation(data=data, verbose=0, plot=True)
 # Returns: {'rpy_coef': (3,), 'rpy_rates_coef': (3,), 'cmd_rpy_coef': (3,)}
 ```
 
-See the [`sys_id_translation`](../reference/drone_models/utils/identification/) and [`sys_id_rotation`](../reference/drone_models/utils/identification/) API references for the full argument list.
+See the [`sys_id_translation`](../reference/drone_models/utils/identification.md) and [`sys_id_rotation`](../reference/drone_models/utils/identification.md) API references for the full argument list.
 
-## Validation split
+## Validation
 
-To check that the identified parameters generalise beyond the training data, provide a held-out split as `data_validation`. RMSE and R² are then reported on both sets.
+To check that the identified parameters generalise to unseen flight regimes, collect a second dataset of different trajectories and pass it as `data_validation`. RMSE and R² are then reported on both the training data and the validation data.
 
 ```python
-n = int(0.8 * len(time_array))
-# preprocessing must be called on each split independently
-data_train = preprocessing({k: v[:n] for k, v in raw_data.items()})
-data_valid = preprocessing({k: v[n:] for k, v in raw_data.items()})
-data_train = derivatives_svf(data_train)
+# Preprocess the validation dataset independently — it must come from
+# different trajectories, not a split of the same recording.
+data_valid = preprocessing(validation_raw_data)
 data_valid = derivatives_svf(data_valid)
 
 trans_params = sys_id_translation(
     model="so_rpy_rotor_drag",
     mass=0.0319,
-    data=data_train,
+    data=data,
     data_validation=data_valid,
     plot=True,
 )
@@ -86,29 +84,33 @@ trans_params = sys_id_translation(
 
 ## Using identified parameters
 
-Once you have the identified coefficients, inject them into a parametrized model by overriding the relevant entries in `model.keywords`. See the [Parametrize](parametrize.md#mutating-stored-parameters) page for more on this pattern.
+Once you have the identified coefficients, add them to the relevant `params.toml` file under a new drone name. Each model sub-package ships its own `params.toml` — for example `drone_models/so_rpy_rotor_drag/params.toml` — and `load_params` reads from it when you call `parametrize`. Add a new section using the TOML table syntax:
 
-```python
-import numpy as np
-from drone_models import parametrize
-from drone_models.so_rpy_rotor_drag import dynamics
-
-model = parametrize(dynamics, drone_model="cf2x_L250")
-
-model.keywords["cmd_f_coef"]       = trans_params["cmd_f_coef"]
-model.keywords["thrust_time_coef"] = trans_params["thrust_time_coef"]
-model.keywords["rpy_coef"]         = rot_params["rpy_coef"]
-model.keywords["rpy_rates_coef"]   = rot_params["rpy_rates_coef"]
-model.keywords["cmd_rpy_coef"]     = rot_params["cmd_rpy_coef"]
-
-# drag_xy_coef and drag_z_coef are scalars — assemble the matrix manually
-drag_xy = trans_params["drag_xy_coef"]
-drag_z  = trans_params["drag_z_coef"]
-model.keywords["drag_matrix"] = np.diag([drag_xy, drag_xy, drag_z])
+```toml
+[my_drone]
+cmd_f_coef       = 0.983        # from trans_params["cmd_f_coef"]
+thrust_time_coef = 0.121        # from trans_params["thrust_time_coef"]
+drag_matrix      = [[-0.0147, 0.0, 0.0],
+                    [0.0, -0.0147, 0.0],
+                    [0.0, 0.0, -0.0128]]  # diag([drag_xy, drag_xy, drag_z])
+rpy_coef         = [-245.67, -245.67, -227.78]  # from rot_params["rpy_coef"]
+rpy_rates_coef   = [-17.32, -17.32, -25.63]     # from rot_params["rpy_rates_coef"]
+cmd_rpy_coef     = [196.18, 196.18, 390.27]     # from rot_params["cmd_rpy_coef"]
 ```
 
 !!! note
-    `sys_id_translation` returns `drag_xy_coef` and `drag_z_coef` as scalars. The model expects a `(3, 3)` diagonal `drag_matrix` — assemble it as shown above.
+    `sys_id_translation` returns `drag_xy_coef` and `drag_z_coef` as scalars. Assemble the diagonal `drag_matrix` manually: `[drag_xy, drag_xy, drag_z]` on the diagonal.
+
+Once the entry is in the TOML file, load the model as usual:
+
+```python
+from drone_models import parametrize
+from drone_models.so_rpy_rotor_drag import dynamics
+
+model = parametrize(dynamics, drone_model="my_drone")
+```
+
+Support for new drone models can be added to the shared parameter files via a pull request on [GitHub](https://github.com/utiasDSL/drone-models).
 
 ## Which model to identify
 

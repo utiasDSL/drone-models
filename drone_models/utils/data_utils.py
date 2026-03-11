@@ -100,7 +100,7 @@ def derivatives_svf(data: dict[str, Array]) -> dict[str, Array]:
     ``"SVF_"``.
 
     Args:
-        data: Dict produced by :func:`preprocessing`.  Must contain ``"pos"``,
+        data: Dict produced by [preprocessing][drone_models.utils.data_utils.preprocessing].  Must contain ``"pos"``,
             ``"rpy"``, ``"time"``, ``"cmd_f"``, and ``"cmd_rpy"``.
 
     Returns:
