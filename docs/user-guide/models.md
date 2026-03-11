@@ -27,10 +27,16 @@ The full rigid-body physics model. The command is four individual motor RPMs. Th
 Working at the rotor-velocity level means you need a controller that converts higher-level commands — position setpoints, attitude + collective thrust — down to individual motor RPMs. [drone-controllers](https://utiasdsl.github.io/drone-controllers/) provides a matching set of controllers designed for exactly this interface.
 
 ```python
+import numpy as np
 from drone_models import parametrize
 from drone_models.first_principles import dynamics
 
 model = parametrize(dynamics, drone_model="cf2x_L250")
+
+pos, vel, ang_vel = np.zeros((3,)), np.zeros((3,)), np.zeros((3,))
+quat = np.array([0., 0., 0., 1.])
+cmd = np.full((4,), 15_000.)
+rotor_vel = np.full((4,), 12_000.)
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
     pos, quat, vel, ang_vel,
@@ -45,7 +51,7 @@ See the [`first_principles` API reference](../reference/drone_models/first_princ
 
 A fitted second-order model where the command is `[roll_rad, pitch_rad, yaw_rad, thrust_N]` — the same interface used by most flight controller firmware. First-order thrust dynamics model motor spin-up delay, and a linear body-frame drag term accounts for aerodynamic resistance. All coefficients are identified from flight data rather than derived from physics, which makes the model easy to calibrate and well-suited to real-time control.
 
-```python
+```{ .python notest }
 from drone_models.so_rpy_rotor_drag import dynamics
 
 model = parametrize(dynamics, drone_model="cf2x_L250")
@@ -78,6 +84,14 @@ from drone_models.so_rpy import dynamics
 All four models accept optional `dist_f` (external force, world frame, N) and `dist_t` (external torque, body frame, N·m) arguments. These are useful for modelling wind, contact forces, or other perturbations without modifying the model itself.
 
 ```python
+import numpy as np
+from drone_models import parametrize
+from drone_models.so_rpy import dynamics
+
+model = parametrize(dynamics, drone_model="cf2x_L250")
+pos, vel, ang_vel = np.zeros((3,)), np.zeros((3,)), np.zeros((3,))
+quat = np.array([0., 0., 0., 1.])
+cmd = np.array([0., 0., 0., 0.31])
 dist_f = np.array([0.05, 0., 0.])  # 50 mN headwind [N]
 dist_t = np.zeros(3)
 
@@ -95,8 +109,8 @@ from drone_models import model_features
 from drone_models.first_principles import dynamics as fp
 from drone_models.so_rpy import dynamics as srpy
 
-print(model_features(fp))     # {'rotor_dynamics': True}
-print(model_features(srpy))   # {'rotor_dynamics': False}
+model_features(fp)     # {'rotor_dynamics': True}
+model_features(srpy)   # {'rotor_dynamics': False}
 ```
 
 ---

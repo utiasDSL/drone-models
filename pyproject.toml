@@ -105,6 +105,9 @@ docstring-code-line-length = "dynamic"
 channels = ["conda-forge"]
 platforms = ["linux-64"]
 
+[tool.pixi.pypi-options]
+extra-index-urls = ["https://download.pytorch.org/whl/cpu"]  # We only want to have the CPU version
+
 [tool.pixi.dependencies]
 pip = "*"
 ruff = "*"
@@ -129,12 +132,13 @@ pytest-cov = ">=6.0.0"
 array-api-strict = ">=2.4.1"
 
 [tool.pixi.feature.tests.pypi-dependencies]
+torch = ">=2.7.0"  # For doctests
 jax = ">=0.7.0"
 pytest-markdown-docs = "*"
 
 [tool.pixi.feature.tests.tasks]
 tests = { cmd = "pytest -v tests", description = "Run tests" }
-test-docs = { cmd = "pytest --doctest-modules drone_models/ --markdown-docs docs/", description = "Run doctests for docstrings and documentation" }
+test-docs = { cmd = "pytest --markdown-docs --markdown-docs-syntax=superfences drone_models/ docs/ --ignore=docs/gen_ref_pages.py", env = { SCIPY_ARRAY_API = "1" }, description = "Run doctests for docstrings and documentation" }
 
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"

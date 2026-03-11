@@ -33,13 +33,14 @@ model = parametrize(dynamics, drone_model="cf2x_L250")
 pos     = np.zeros(3)                   # [m]
 quat    = np.array([0., 0., 0., 1.])   # xyzw — identity (no rotation)
 vel     = np.zeros(3)                   # [m/s]
+rotor_vel = np.ones(4) * 12_000.        # [RPM] — motors are spinning but not yet at the 15 000 RPM
 ang_vel = np.zeros(3)                   # [rad/s]
 
 # Command: all four motors at 15 000 RPM (rough hover point for cf2x_L250).
 cmd = np.full(4, 15_000.)              # [RPM]
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
-    pos, quat, vel, ang_vel, cmd
+    pos, quat, vel, ang_vel, cmd, rotor_vel
 )
 ```
 
@@ -64,13 +65,23 @@ These are the right-hand side of the continuous-time ODE $\dot{x} = f(x, u)$. To
 Real motors don't respond instantaneously to commands. Passing the current motor state as `rotor_vel` enables the rotor dynamics model, which computes how the motors accelerate or decelerate toward the commanded RPM.
 
 ```python
+import numpy as np
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
+
+model = parametrize(dynamics, drone_model="cf2x_L250")
+pos     = np.zeros(3)
+quat    = np.array([0., 0., 0., 1.])
+vel     = np.zeros(3)
+ang_vel = np.zeros(3)
+cmd     = np.full(4, 15_000.)
 # Current RPMs lag behind the 15 000 RPM command — motors are still spinning up.
 rotor_vel = np.full(4, 12_000.)
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
     pos, quat, vel, ang_vel, cmd, rotor_vel=rotor_vel
 )
-print(rotor_vel_dot)  # positive — rotors accelerating toward cmd
+rotor_vel_dot  # positive — rotors accelerating toward cmd
 ```
 
 ## Next steps

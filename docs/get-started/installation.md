@@ -88,6 +88,5 @@ If your drone is not listed, you can fit parameters from your own flight data us
 
 ```python
 from drone_models import available_models
-print(list(available_models))
-# ['first_principles', 'so_rpy', 'so_rpy_rotor', 'so_rpy_rotor_drag']
+list(available_models)  # ['first_principles', 'so_rpy', 'so_rpy_rotor', 'so_rpy_rotor_drag']
 ```

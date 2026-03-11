@@ -82,7 +82,7 @@ def parametrize(
         device: The device to use. If none, the device is inferred from the xp module.
 
     Example:
-        ```python
+        ```{ .python notest }
         from drone_models.core import parametrize
         from drone_models.first_principles import dynamics
 
@@ -104,7 +104,7 @@ def parametrize(
             for name, param in sig.parameters.items()
             if param.kind == inspect.Parameter.KEYWORD_ONLY
         ]
-        params = load_params(physics, drone_model)
+        params = load_params(physics, drone_model, xp=xp)
         params = {k: xp.asarray(v, device=device) for k, v in params.items() if k in kwonly_params}
     except KeyError as e:
         raise KeyError(
@@ -156,6 +156,8 @@ def load_params(physics: str, drone_model: str, xp: ModuleType | None = None) ->
     if drone_model not in model_params:
         raise KeyError(f"Drone model `{drone_model}` not found in model params.toml")
     params = physical_params[drone_model] | model_params[drone_model]
-    params["J_inv"] = np.linalg.inv(params["J"])
+    # Make sure J_inv does not have a dtype fixed before conversion to xp arrays to avoid fixing it
+    # to np.float64 when other frameworks might prefer a different dtype.
+    params["J_inv"] = np.linalg.inv(params["J"]).tolist()
     params = {k: xp.asarray(v) for k, v in params.items()}  # if k in fields
     return params

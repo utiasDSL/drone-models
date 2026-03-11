@@ -16,16 +16,12 @@ Physical parameters are passed via `load_params` rather than baked in — the sa
 ```python
 import casadi as cs
 from drone_models.first_principles import symbolic_dynamics
-from drone_models.core import load_params
+from drone_models.core import parametrize
 
-params = load_params("first_principles", "cf2x_L250")
+symbolic_dynamics = parametrize(symbolic_dynamics, "cf2x_L250")
 
-X_dot, X, U, Y = symbolic_dynamics(
-    model_rotor_vel=True,   # include rotor velocity in the state vector
-    model_dist_f=False,
-    model_dist_t=False,
-    **params,
-)
+# include rotor velocity in the state vector
+X_dot, X, U, Y = symbolic_dynamics(model_rotor_vel=True, model_dist_f=False, model_dist_t=False)
 
 f = cs.Function("f", [X, U], [X_dot])
 ```
@@ -48,10 +44,9 @@ See the [`first_principles` API reference](../reference/drone_models/first_princ
 
 ```python
 from drone_models.so_rpy_rotor_drag import symbolic_dynamics
-from drone_models.core import load_params
+from drone_models.core import parametrize
 
-params = load_params("so_rpy_rotor_drag", "cf2x_L250")
-X_dot, X, U, Y = symbolic_dynamics(model_rotor_vel=True, **params)
+X_dot, X, U, Y = parametrize(symbolic_dynamics, "cf2x_L250")(model_rotor_vel=True)
 ```
 
 ## Fitted models — Euler form
@@ -60,10 +55,10 @@ The fitted models also expose `symbolic_dynamics_euler`, which works directly in
 
 ```python
 from drone_models.so_rpy_rotor_drag import symbolic_dynamics_euler
-from drone_models.core import load_params
+from drone_models.core import parametrize
 
-params = load_params("so_rpy_rotor_drag", "cf2x_L250")
-X_dot, X, U, Y = symbolic_dynamics_euler(model_rotor_vel=True, **params)
+symbolic_dynamics_euler = parametrize(symbolic_dynamics_euler, "cf2x_L250")
+X_dot, X, U, Y = symbolic_dynamics_euler(model_rotor_vel=True)
 ```
 
 State vector layout with `model_rotor_vel=True`:
@@ -80,15 +75,18 @@ State vector layout with `model_rotor_vel=True`:
 
 Both functions return raw CasADi expressions. Wrap them in a `cs.Function` to pass to any CasADi-based solver:
 
-```python
+!!! warning
+    This is currently broken. Investigate and fix the issue.
+
+```{ .python notest }
 import casadi as cs
 from drone_models.so_rpy_rotor_drag import symbolic_dynamics_euler
-from drone_models.core import load_params
+from drone_models.core import parametrize
 
-params = load_params("so_rpy_rotor_drag", "cf2x_L250")
-X_dot, X, U, Y = symbolic_dynamics_euler(model_rotor_vel=True, **params)
+symbolic_dynamics_euler = parametrize(symbolic_dynamics_euler, "cf2x_L250")
+X_dot, X, U, Y = symbolic_dynamics_euler(model_rotor_vel=True)
 
-f = cs.Function("f", [X, U], [X_dot], ["x", "u"], ["xdot"])
+f = cs.Function("f", [X, U], [X_dot])
 # Pass f directly to Acados, IPOPT, or any CasADi-based solver
 ```
 
@@ -98,16 +96,12 @@ Setting `model_dist_f=True` or `model_dist_t=True` appends the disturbance vecto
 
 ```python
 from drone_models.first_principles import symbolic_dynamics
-from drone_models.core import load_params
+from drone_models.core import parametrize
 
-params = load_params("first_principles", "cf2x_L250")
+symbolic_dynamics = parametrize(symbolic_dynamics, "cf2x_L250")
 
-X_dot, X, U, Y = symbolic_dynamics(
-    model_rotor_vel=True,
-    model_dist_f=True,   # dist_f (3,) appended to state
-    model_dist_t=True,   # dist_t (3,) appended to state
-    **params,
-)
+# dist_f (3,) and dist_t (3,) appended to state
+X_dot, X, U, Y = symbolic_dynamics(model_rotor_vel=True, model_dist_f=True, model_dist_t=True)
 # X is now 17 + 3 + 3 = 23 elements long
 ```
 

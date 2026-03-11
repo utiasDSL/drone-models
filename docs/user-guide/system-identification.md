@@ -26,7 +26,7 @@ After `preprocessing` + [`derivatives_svf`](../reference/drone_models/utils/data
 
 ## Full pipeline
 
-```python
+```{ .python notest }
 from drone_models.utils.data_utils import preprocessing, derivatives_svf
 from drone_models.utils.identification import sys_id_translation, sys_id_rotation
 
@@ -67,7 +67,7 @@ See the [`sys_id_translation`](../reference/drone_models/utils/identification.md
 
 To check that the identified parameters generalise to unseen flight regimes, collect a second dataset of different trajectories and pass it as `data_validation`. RMSE and R² are then reported on both the training data and the validation data.
 
-```python
+```{ .python notest }
 # Preprocess the validation dataset independently — it must come from
 # different trajectories, not a split of the same recording.
 data_valid = preprocessing(validation_raw_data)
@@ -103,7 +103,7 @@ cmd_rpy_coef     = [196.18, 196.18, 390.27]     # from rot_params["cmd_rpy_coef"
 
 Once the entry is in the TOML file, load the model as usual:
 
-```python
+```{ .python notest }
 from drone_models import parametrize
 from drone_models.so_rpy_rotor_drag import dynamics
 

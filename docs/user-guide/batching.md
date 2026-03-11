@@ -20,7 +20,7 @@ rotor_vel = jnp.full((N, 4), 15_000.)
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
     pos, quat, vel, ang_vel, cmd, rotor_vel=rotor_vel
 )
-print(vel_dot.shape)  # (1000, 3)
+vel_dot.shape  # (1000, 3)
 ```
 
 A runnable version of this example is in [Examples: Batched evaluation](../examples/index.md#batched-evaluation).
@@ -30,15 +30,21 @@ A runnable version of this example is in [Examples: Batched evaluation](../examp
 Any number of leading dimensions works. A common pattern is a grid of environments, each containing multiple drones:
 
 ```python
+import jax.numpy as jnp
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
+
+model = parametrize(dynamics, drone_model="cf2x_L250", xp=jnp)
 # 50 environments, 20 drones each
 pos     = jnp.zeros((50, 20, 3))
 quat    = jnp.broadcast_to(jnp.array([0., 0., 0., 1.]), (50, 20, 4))
 vel     = jnp.zeros((50, 20, 3))
 ang_vel = jnp.zeros((50, 20, 3))
+rotor_vel = jnp.full((50, 20, 4), 12_000.)
 cmd     = jnp.full((50, 20, 4), 15_000.)
 
-vel_dot, *_ = model(pos, quat, vel, ang_vel, cmd)
-print(vel_dot.shape)  # (50, 20, 3)
+vel_dot, *_ = model(pos, quat, vel, ang_vel, cmd, rotor_vel)
+vel_dot.shape  # (50, 20, 3)
 ```
 
 ## Domain randomization
@@ -56,6 +62,10 @@ from drone_models.first_principles import dynamics
 N   = 4_096
 key = jax.random.PRNGKey(0)
 
+pos, vel, ang_vel = jnp.zeros((N, 3)), jnp.zeros((N, 3)), jnp.zeros((N, 3))
+quat = jnp.tile(jnp.array([0., 0., 0., 1.]), (N, 1))
+cmd = jnp.full((N, 4), 15_000.)
+rotor_vel = jnp.full((N, 4), 15_000.)
 model = parametrize(dynamics, drone_model="cf2x_L250", xp=jnp)
 nominal_mass = model.keywords["mass"]
 nominal_J    = model.keywords["J"]
@@ -68,7 +78,7 @@ def step(pos, quat, vel, ang_vel, cmd, rotor_vel, mass, J, J_inv):
     )
 
 key, k1, k2 = jax.random.split(key, 3)
-mass_batch  = nominal_mass * jax.random.uniform(k1, (N,),      minval=0.9, maxval=1.1)
+mass_batch  = nominal_mass * jax.random.uniform(k1, (N, 1),      minval=0.9, maxval=1.1)
 J_batch     = nominal_J    * jax.random.uniform(k2, (N, 3, 3), minval=0.9, maxval=1.1)
 J_inv_batch = jnp.linalg.inv(J_batch)
 
@@ -78,7 +88,7 @@ vel_dot = step(pos, quat, vel, ang_vel, cmd, rotor_vel,
 
 **Option 2 — mutate `model.keywords` directly.** Simpler when you don't need JIT or are happy to retrace. Replace a scalar parameter with a `(N,)` array and each element in the batch uses its own value.
 
-```python
+```{ .python notest }
 model.keywords["mass"] = nominal_mass * mass_batch  # shape (N,)
 vel_dot = model(pos, quat, vel, ang_vel, cmd)[2]
 ```

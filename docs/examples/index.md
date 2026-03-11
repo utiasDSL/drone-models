@@ -17,10 +17,11 @@ pos     = np.zeros(3)
 quat    = np.array([0., 0., 0., 1.])   # xyzw — identity (no rotation)
 vel     = np.zeros(3)
 ang_vel = np.zeros(3)
+rotor_vel = np.ones(4) * 12_000.
 cmd     = np.full(4, 15_000.)           # motor RPMs
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
-    pos, quat, vel, ang_vel, cmd
+    pos, quat, vel, ang_vel, cmd, rotor_vel
 )
 ```
 
@@ -31,13 +32,23 @@ The outputs are the time derivatives of each state variable — the right-hand s
 In the previous example `rotor_vel_dot` is `None` because we didn't tell the model what speed the motors are currently at. The model just assumed they were already at the commanded RPM. That's a reasonable approximation for slow maneuvers, but real motors take time to spin up and down. Passing `rotor_vel` enables the rotor dynamics, which computes the acceleration of each motor toward its target.
 
 ```python
+import numpy as np
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
+
+model = parametrize(dynamics, drone_model="cf2x_L250")
+pos     = np.zeros(3)
+quat    = np.array([0., 0., 0., 1.])
+vel     = np.zeros(3)
+ang_vel = np.zeros(3)
+cmd     = np.full(4, 15_000.)
 # The motors are at 12 000 RPM but commanded to 15 000 — they're spinning up.
 rotor_vel = np.full(4, 12_000.)
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
     pos, quat, vel, ang_vel, cmd, rotor_vel=rotor_vel
 )
-print(rotor_vel_dot)  # positive — rotors accelerating toward cmd
+rotor_vel_dot  # positive — rotors accelerating toward cmd
 ```
 
 ## Fitted models
@@ -45,9 +56,16 @@ print(rotor_vel_dot)  # positive — rotors accelerating toward cmd
 The first-principles model requires individual motor RPMs as input, which means you need rotor-level commands. The fitted models — `so_rpy`, `so_rpy_rotor`, `so_rpy_rotor_drag` — take a higher-level command instead: roll, pitch, yaw setpoints in radians plus collective thrust in Newtons. This matches the command interface of typical flight controllers and makes them convenient for control design and system identification.
 
 ```python
-from drone_models.so_rpy_rotor_drag import dynamics as srrd
+import numpy as np
+from drone_models import parametrize
+from drone_models.so_rpy import dynamics
 
-model = parametrize(srrd, drone_model="cf2x_L250")
+pos     = np.zeros(3)
+quat    = np.array([0., 0., 0., 1.])
+vel     = np.zeros(3)
+ang_vel = np.zeros(3)
+
+model = parametrize(dynamics, drone_model="cf2x_L250")
 
 # Collective thrust near hover: mass * g ≈ 0.0319 * 9.81 ≈ 0.31 N
 cmd = np.array([0., 0., 0., 0.31])   # [roll_rad, pitch_rad, yaw_rad, thrust_N]
@@ -73,10 +91,11 @@ pos     = torch.zeros(3)
 quat    = torch.tensor([0., 0., 0., 1.])
 vel     = torch.zeros(3)
 ang_vel = torch.zeros(3)
+rotor_vel = torch.ones(4) * 12_000.
 cmd     = torch.full((4,), 15_000.)
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
-    pos, quat, vel, ang_vel, cmd
+    pos, quat, vel, ang_vel, cmd, rotor_vel
 )
 ```
 
@@ -85,6 +104,14 @@ pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
 The same model handles arbitrary leading batch dimensions — no special API, no loops. Add a leading dimension to all state and command arrays and the model evaluates all instances in a single call. This works identically across all backends.
 
 ```python
+import torch
+
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
+
+# Parameters are stored as torch tensors — no per-call conversion needed.
+model = parametrize(dynamics, drone_model="cf2x_L250", xp=torch)
+
 N = 1_000
 
 pos       = torch.zeros(N, 3)
@@ -97,7 +124,7 @@ rotor_vel = torch.full((N, 4), 15_000.)
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
     pos, quat, vel, ang_vel, cmd, rotor_vel=rotor_vel
 )
-print(vel_dot.shape)   # (1000, 3)
+vel_dot.shape   # (1000, 3)
 ```
 
 ## Overriding parameters at call time
@@ -117,12 +144,13 @@ pos     = jnp.zeros(3)
 quat    = jnp.array([0., 0., 0., 1.])
 vel     = jnp.zeros(3)
 ang_vel = jnp.zeros(3)
+rotor_vel = jnp.ones(4) * 12_000.
 cmd     = jnp.full((4,), 15_000.)
 
 # The model was parametrized with mass=0.0319 kg.
 # Simulate the same drone carrying a 10 g payload for this one call:
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
-    pos, quat, vel, ang_vel, cmd, mass=jnp.float32(0.0419)
+    pos, quat, vel, ang_vel, cmd, rotor_vel, mass=jnp.float32(0.0419)
 )
 ```
 
@@ -164,7 +192,7 @@ nominal_mass = model.keywords["mass"]   # scalar
 nominal_J    = model.keywords["J"]      # (3, 3)
 
 key, k1, k2 = jax.random.split(key, 3)
-mass_batch  = nominal_mass * jax.random.uniform(k1, (N,),      minval=0.9, maxval=1.1)
+mass_batch  = nominal_mass * jax.random.uniform(k1, (N, 1),      minval=0.9, maxval=1.1)
 J_batch     = nominal_J    * jax.random.uniform(k2, (N, 3, 3), minval=0.9, maxval=1.1)
 J_inv_batch = jnp.linalg.inv(J_batch)
 
@@ -173,5 +201,5 @@ pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = step(
     pos, quat, vel, ang_vel, cmd, rotor_vel,
     mass_batch, J_batch, J_inv_batch,
 )
-print(vel_dot.shape)   # (4096, 3)
+vel_dot.shape   # (4096, 3)
 ```

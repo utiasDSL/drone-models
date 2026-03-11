@@ -9,7 +9,7 @@ from drone_models.first_principles import dynamics
 model = parametrize(dynamics, drone_model="cf2x_L250")
 
 # Inspect what was pre-filled
-print(list(model.keywords.keys()))
+list(model.keywords.keys())
 # ['mass', 'L', 'prop_inertia', 'gravity_vec', 'J', 'J_inv',
 #  'rpm2thrust', 'rpm2torque', 'mixing_matrix', 'rotor_dyn_coef', 'drag_matrix']
 ```
@@ -22,8 +22,8 @@ The following configurations ship with pre-fitted parameters. They cover both th
 
 ```python
 from drone_models.drones import available_drones
-print(available_drones)
-# ('cf2x_L250', 'cf2x_P250', 'cf2x_T350', 'cf21B_500')
+
+available_drones  # ('cf2x_L250', 'cf2x_P250', 'cf2x_T350', 'cf21B_500')
 ```
 
 | `drone_model` | Platform |
@@ -42,6 +42,8 @@ By default, `parametrize` stores parameters as NumPy arrays. For frameworks that
 ```python
 import torch
 import jax.numpy as jnp
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
 
 model_torch = parametrize(dynamics, drone_model="cf2x_L250", xp=torch)
 model_jax   = parametrize(dynamics, drone_model="cf2x_L250", xp=jnp)
@@ -49,7 +51,7 @@ model_jax   = parametrize(dynamics, drone_model="cf2x_L250", xp=jnp)
 
 You can also specify a compute device — for example, to move JAX parameters to GPU at construction time:
 
-```python
+```{ .python notest }
 import jax
 model_gpu = parametrize(
     dynamics, drone_model="cf2x_L250",
@@ -64,10 +66,20 @@ See the [Examples](../examples/index.md#switching-backends) page for a runnable 
 Because `parametrize` returns a `functools.partial`, the stored parameters are just keyword argument defaults. You can override any of them for a single call by passing a new value as a keyword argument — the call-time value takes precedence and the stored defaults are unchanged.
 
 ```python
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
+import numpy as np
 model = parametrize(dynamics, drone_model="cf2x_L250")
 
+pos = np.zeros(3)
+quat = np.array([0., 0., 0., 1.])
+vel = np.zeros(3)
+ang_vel = np.zeros(3)
+rotor_vel = np.zeros(4)
+cmd = np.zeros(4)
+
 # Simulate with a 10 g payload for this call only — model.keywords is not modified.
-pos_dot, *_ = model(pos, quat, vel, ang_vel, cmd, mass=0.0419)
+pos_dot, *_ = model(pos, quat, vel, ang_vel, cmd, rotor_vel, mass=0.0419)
 ```
 
 This becomes particularly useful for domain randomization: instead of baking randomized parameters into the partial, you can pass a batch of them as call-time arguments and keep the step function JIT-compiled across parameter changes. See the [domain randomization example](../examples/index.md#domain-randomization-with-jit-compilation) for the full pattern.
@@ -77,6 +89,9 @@ This becomes particularly useful for domain randomization: instead of baking ran
 You can also modify `model.keywords` directly for changes that should persist across all future calls:
 
 ```python
+from drone_models import parametrize
+from drone_models.first_principles import dynamics
+import numpy as np
 model = parametrize(dynamics, drone_model="cf2x_L250")
 model.keywords["mass"] = np.float64(0.040)  # heavier drone — applies to every call
 ```
@@ -90,9 +105,9 @@ model.keywords["mass"] = np.float64(0.040)  # heavier drone — applies to every
 
 ```python
 from drone_models import available_models
+from drone_models import parametrize
 
-print(list(available_models))
-# ['first_principles', 'so_rpy', 'so_rpy_rotor', 'so_rpy_rotor_drag']
+list(available_models)  # ['first_principles', 'so_rpy', 'so_rpy_rotor', 'so_rpy_rotor_drag']
 
 fn = available_models["so_rpy_rotor_drag"]
 model = parametrize(fn, drone_model="cf2x_T350")
@@ -106,8 +121,8 @@ If you need the parameter values directly — for example, to pass them to [`sym
 from drone_models.core import load_params
 
 params = load_params("first_principles", "cf2x_L250")
-print(params["mass"])        # 0.0319
-print(params["rpm2thrust"])  # array([...])
+params["mass"]        # 0.0319
+params["rpm2thrust"]  # array([...])
 ```
 
 See the [`load_params` API reference](../reference/drone_models/core.md) for details.

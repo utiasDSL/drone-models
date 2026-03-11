@@ -25,27 +25,15 @@ rotor_vel = motor_force2rotor_vel(forces, params["rpm2thrust"])  # [RPM]
 Computes the total thrust force vector in the body frame from motor RPMs. For a level drone this is purely along the z-axis.
 
 ```python
+import numpy as np
+from drone_models.core import load_params
+
+params    = load_params("first_principles", "cf2x_L250")
+rotor_vel = np.array([14_000., 14_000., 14_000., 14_000.])
 from drone_models.transform import rotor_vel2body_force
 
 rotor_vel  = np.array([14_000., 14_000., 14_000., 14_000.])  # [RPM]
 body_force = rotor_vel2body_force(rotor_vel, params["rpm2thrust"])
-# shape (..., 3)
-```
-
-### `rotor_vel2body_torque`
-
-Computes the body torques from motor RPMs, combining the thrust-induced roll/pitch moments and the reaction torques about the yaw axis.
-
-```python
-from drone_models.transform import rotor_vel2body_torque
-
-body_torque = rotor_vel2body_torque(
-    rotor_vel,
-    params["rpm2thrust"],
-    params["rpm2torque"],
-    params["L"],
-    params["mixing_matrix"],
-)
 # shape (..., 3)
 ```
 
@@ -54,6 +42,9 @@ body_torque = rotor_vel2body_torque(
 Convert between per-motor thrust in Newtons and the PWM integer sent to the motor controller. Useful when interfacing with Crazyflie firmware, which communicates in PWM.
 
 ```python
+from drone_models.core import load_params
+
+params = load_params("first_principles", "cf2x_L250")
 from drone_models.transform import force2pwm, pwm2force
 
 pwm        = force2pwm(0.08, params["thrust_max"], params["pwm_max"])
@@ -67,6 +58,10 @@ All four functions support batched inputs: leading batch dimensions are broadcas
 These functions live in [`drone_models.utils.rotation`](../reference/drone_models/utils/rotation.md) and convert between angular velocity representations. They are useful when mixing models that use different rotational state variables, or when implementing a state estimator that works in Euler angles while the model uses quaternions.
 
 ```python
+import numpy as np
+quat = np.array([0., 0., 0., 1.])
+ang_vel = np.zeros(3)
+
 from drone_models.utils.rotation import (
     ang_vel2rpy_rates,
     rpy_rates2ang_vel,

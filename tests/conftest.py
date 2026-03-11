@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("SCIPY_ARRAY_API", "1")
+
 import jax
 
 jax.config.update("jax_compilation_cache_dir", "/tmp/jax_cache")

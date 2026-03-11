@@ -65,7 +65,7 @@ def model_features(model: Callable) -> dict[str, bool]:
         from drone_models import model_features
         from drone_models.first_principles import dynamics
 
-        print(model_features(dynamics))  # {'rotor_dynamics': True}
+        model_features(dynamics)  # {'rotor_dynamics': True}
         ```
     """
     if hasattr(model, "func"):  # Is a partial function

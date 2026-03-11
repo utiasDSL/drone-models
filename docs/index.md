@@ -17,10 +17,11 @@ pos     = np.zeros(3)
 quat    = np.array([0., 0., 0., 1.])   # xyzw, identity
 vel     = np.zeros(3)
 ang_vel = np.zeros(3)
+rotor_vel = np.ones(4) * 12_000.
 cmd     = np.full(4, 15_000.)           # motor RPMs, near hover
 
 pos_dot, quat_dot, vel_dot, ang_vel_dot, rotor_vel_dot = model(
-    pos, quat, vel, ang_vel, cmd
+    pos, quat, vel, ang_vel, cmd, rotor_vel
 )
 ```
 
