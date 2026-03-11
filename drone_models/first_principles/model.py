@@ -1,4 +1,15 @@
-"""TODO."""
+"""First-principles physics-based quadrotor dynamics model.
+
+This module implements full rigid-body dynamics for a quadrotor based on
+Newton-Euler equations.  The model is parameterised with physical constants
+(mass, inertia, thrust and torque curves, motor arm length, drag coefficients)
+and requires no data fitting.  Propeller gyroscopic effects are included.
+
+The command interface is four motor angular velocities in RPM.
+
+Both a numeric implementation (:func:`dynamics`) and a symbolic CasADi
+implementation (:func:`symbolic_dynamics`) are provided.
+"""
 
 from __future__ import annotations
 
@@ -161,7 +172,44 @@ def symbolic_dynamics(
     rotor_dyn_coef: Array,
     drag_matrix: Array,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
-    """TODO take from numeric."""
+    """Return CasADi symbolic expressions for the first-principles model.
+
+    Implements the same dynamics as :func:`dynamics` using CasADi ``MX``
+    symbolic expressions, validated to be numerically equivalent.
+
+    Args:
+        model_rotor_vel: If ``True``, the four motor RPM states are included in
+            ``X`` and rotor dynamics are modelled.  If ``False``, the commanded
+            RPMs are used directly.  Defaults to ``True``.
+        model_dist_f: If ``True``, a 3-D force disturbance is appended to ``X``.
+        model_dist_t: If ``True``, a 3-D torque disturbance is appended to ``X``.
+        mass: Drone mass in kg.
+        L: Distance from centre of mass to motor in metres.
+        prop_inertia: Moment of inertia of one propeller about its spin axis
+            in kg m².
+        gravity_vec: Gravity vector, shape ``(3,)``.
+        J: Inertia matrix, shape ``(3, 3)``.
+        J_inv: Inverse inertia matrix, shape ``(3, 3)``.
+        rpm2thrust: Polynomial coefficients ``[a, b, c]`` for the thrust curve
+            ``f = a + b * rpm + c * rpm²``.
+        rpm2torque: Polynomial coefficients ``[a, b, c]`` for the drag-torque
+            curve ``τ = a + b * rpm + c * rpm²``.
+        mixing_matrix: Matrix of shape ``(3, 4)`` mapping per-motor forces to
+            body torques.
+        rotor_dyn_coef: Four rotor dynamics coefficients ``[k_acc1, k_acc2,
+            k_dec1, k_dec2]`` used in the piecewise-linear spin-up/down model.
+        drag_matrix: Diagonal ``(3, 3)`` matrix of linear drag coefficients.
+
+    Returns:
+        Tuple ``(X_dot, X, U, Y)`` of CasADi ``MX`` expressions:
+
+        * ``X_dot``: State derivative, length 17 when ``model_rotor_vel=True``
+          (13 otherwise), plus 3 per enabled disturbance.
+        * ``X``: State vector ``[pos(3), quat(4), vel(3), ang_vel(3)]``, with
+          ``rotor_vel(4)`` appended if ``model_rotor_vel=True``.
+        * ``U``: Input vector ``[rpm_1, rpm_2, rpm_3, rpm_4]``.
+        * ``Y``: Output ``[pos(3), quat(4)]``.
+    """
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.quat, symbols.vel, symbols.ang_vel)
     if model_rotor_vel:

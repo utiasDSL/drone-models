@@ -71,19 +71,37 @@ plugins:
 nav:
   - Home: index.md
   - Get Started:
-    - get-started/index.md
     - Installation: get-started/installation.md
     - Quick Start: get-started/quick-start.md
-  - Concepts:
-    - concepts/index.md
-    - Drone Models: concepts/drone-models.md
-    - Transformations: concepts/transformations.md
-    - Parameters: concepts/parameters.md
-  - API Documentation: reference/
-  - Examples:
-    - examples/index.md
-    - Basic Usage: examples/basic-usage.md
-    - Advanced Examples: examples/advanced.md
+  - User Guide:
+    - Models: user-guide/models.md
+    - Parametrize: user-guide/parametrize.md
+    - Batching and Domain Randomization: user-guide/batching.md
+    - Symbolic Models: user-guide/symbolic.md
+    - System Identification: user-guide/system-identification.md
+    - Transform Utilities: user-guide/transforms.md
+  - Examples: examples/index.md
+  - API Reference:
+    - drone_models: reference/drone_models/index.md
+    - Models:
+      - first_principles: reference/drone_models/first_principles/index.md
+      - first_principles.model: reference/drone_models/first_principles/model.md
+      - so_rpy: reference/drone_models/so_rpy/index.md
+      - so_rpy.model: reference/drone_models/so_rpy/model.md
+      - so_rpy_rotor: reference/drone_models/so_rpy_rotor/index.md
+      - so_rpy_rotor.model: reference/drone_models/so_rpy_rotor/model.md
+      - so_rpy_rotor_drag: reference/drone_models/so_rpy_rotor_drag/index.md
+      - so_rpy_rotor_drag.model: reference/drone_models/so_rpy_rotor_drag/model.md
+    - Core:
+      - core: reference/drone_models/core.md
+      - drones: reference/drone_models/drones.md
+      - symbols: reference/drone_models/symbols.md
+      - transform: reference/drone_models/transform.md
+    - Utilities:
+      - utils: reference/drone_models/utils/index.md
+      - utils.rotation: reference/drone_models/utils/rotation.md
+      - utils.data_utils: reference/drone_models/utils/data_utils.md
+      - utils.identification: reference/drone_models/utils/identification.md
   - Cite: cite.md
 
 markdown_extensions:

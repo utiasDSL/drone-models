@@ -194,7 +194,25 @@ def rpy_rates_deriv2ang_vel_deriv(quat: Array, rpy_rates: Array, rpy_rates_deriv
 
 
 def cs_quat2euler(quat: cs.MX, seq: str = "xyz", degrees: bool = False) -> cs.MX:
-    """TODO."""
+    """Convert a CasADi symbolic quaternion to Euler angles.
+
+    Symbolic equivalent of ``scipy.spatial.transform.Rotation.from_quat(q).as_euler(seq)``,
+    implemented in CasADi ``MX`` so it can be differentiated and compiled by
+    CasADi-based solvers.
+
+    Args:
+        quat: CasADi ``MX`` column vector of length 4, in scalar-last (xyzw)
+            convention.
+        seq: Three-character axis sequence string.  Lowercase letters (e.g.
+            ``"xyz"``) denote extrinsic rotations; uppercase (e.g. ``"XYZ"``)
+            denote intrinsic rotations.  Consecutive axes must differ.
+        degrees: If ``True``, the returned angles are in degrees.  Defaults to
+            ``False`` (radians).
+
+    Returns:
+        CasADi ``MX`` column vector of length 3 containing the Euler angles in
+        the requested sequence and unit.
+    """
     if len(seq) != 3:
         raise ValueError(f"Expected 3 axes, got {len(seq)}.")
 
@@ -223,7 +241,7 @@ def cs_quat2euler(quat: cs.MX, seq: str = "xyz", degrees: bool = False) -> cs.MX
         angle_third = 0
 
     def elementary_basis_index(axis: str) -> int:
-        """TODO."""
+        """Return the 0-based index (0=x, 1=y, 2=z) for an axis character."""
         if axis == "x":
             return 0
         elif axis == "y":
@@ -359,7 +377,15 @@ def cs_rpy2matrix(rpy: cs.MX, degrees: bool = False) -> cs.MX:
 
 
 def create_cs_ang_vel2rpy_rates() -> cs.Function:
-    """TODO."""
+    """Build a compiled CasADi function that converts angular velocity to RPY rates.
+
+    Returns:
+        A ``casadi.Function`` with signature
+        ``(quat[4], ang_vel[3]) -> rpy_rates[3]``
+        that evaluates the kinematic mapping
+        ``ṙpy = W(rpy) · ω`` for a given attitude quaternion and body-frame
+        angular velocity.
+    """
     qw = cs.MX.sym("qw")
     qx = cs.MX.sym("qx")
     qy = cs.MX.sym("qy")
@@ -386,7 +412,14 @@ cs_ang_vel2rpy_rates = create_cs_ang_vel2rpy_rates()
 
 
 def create_cs_rpy_rates2ang_vel() -> cs.Function:
-    """TODO."""
+    """Build a compiled CasADi function that converts RPY rates to angular velocity.
+
+    Returns:
+        A ``casadi.Function`` with signature
+        ``(quat[4], rpy_rates[3]) -> ang_vel[3]``
+        that evaluates the inverse kinematic mapping
+        ``ω = W⁻¹(rpy) · ṙpy``.
+    """
     qw = cs.MX.sym("qw")
     qx = cs.MX.sym("qx")
     qy = cs.MX.sym("qy")
@@ -412,7 +445,13 @@ cs_rpy_rates2ang_vel = create_cs_rpy_rates2ang_vel()
 
 
 def create_cs_ang_vel_deriv2rpy_rates_deriv() -> cs.Function:
-    """TODO."""
+    """Build a compiled CasADi function that converts angular acceleration to RPY-rate derivatives.
+
+    Returns:
+        A ``casadi.Function`` with signature
+        ``(quat[4], ang_vel[3], ang_vel_deriv[3]) -> rpy_rates_deriv[3]``
+        implementing ``r̈py = Ẇ · ω + W · ω̇``.
+    """
     qw = cs.MX.sym("qw")
     qx = cs.MX.sym("qx")
     qy = cs.MX.sym("qy")
@@ -455,7 +494,13 @@ cs_ang_vel_deriv2rpy_rates_deriv = create_cs_ang_vel_deriv2rpy_rates_deriv()
 
 
 def create_cs_rpy_rates_deriv2ang_vel_deriv() -> cs.Function:
-    """TODO."""
+    """Build a compiled CasADi function that converts RPY-rate derivatives to angular acceleration.
+
+    Returns:
+        A ``casadi.Function`` with signature
+        ``(quat[4], rpy_rates[3], rpy_rates_deriv[3]) -> ang_vel_deriv[3]``
+        implementing ``ω̇ = Ẇ · ṙpy + W · r̈py``.
+    """
     qw = cs.MX.sym("qw")
     qx = cs.MX.sym("qx")
     qy = cs.MX.sym("qy")

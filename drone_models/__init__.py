@@ -1,4 +1,12 @@
-"""TODO."""
+"""drone-models: quadrotor dynamics models for estimation, control, and simulation.
+
+This package provides numeric and symbolic quadrotor dynamics models at multiple
+fidelity levels. Models are pure functions compatible with any Array API backend
+(NumPy, JAX, PyTorch, etc.) and with CasADi for symbolic computation.
+
+Use :func:`parametrize` to bind a dynamics function to a named drone configuration,
+and :data:`available_models` to enumerate all registered models.
+"""
 
 import os
 import sys
@@ -37,7 +45,29 @@ available_models: dict[str, Callable] = {
 
 
 def model_features(model: Callable) -> dict[str, bool]:
-    """Get the features of a model."""
+    """Return the feature flags declared by a dynamics function.
+
+    Feature flags are set by the :func:`~drone_models.core.supports` decorator on each
+    dynamics function and describe which optional inputs the model accepts.
+
+    Args:
+        model: A dynamics function, or a ``functools.partial`` wrapping one (as
+            returned by :func:`parametrize`).
+
+    Returns:
+        A dict of feature names to booleans. Currently contains:
+            - ``"rotor_dynamics"``: ``True`` if the model accepts and integrates
+              ``rotor_vel``, ``False`` if passing ``rotor_vel`` raises a
+              ``ValueError``.
+
+    Example:
+        ```python
+        from drone_models import model_features
+        from drone_models.first_principles import dynamics
+
+        print(model_features(dynamics))  # {'rotor_dynamics': True}
+        ```
+    """
     if hasattr(model, "func"):  # Is a partial function
         return model_features(model.func)
     return getattr(model, "__drone_model_features__")

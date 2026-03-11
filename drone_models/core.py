@@ -23,7 +23,27 @@ R = TypeVar("R")
 
 
 def supports(rotor_dynamics: bool = True) -> Callable[[F], F]:
-    """Decorator to indicate which features are supported."""
+    """Decorator that declares which optional inputs a dynamics function supports.
+
+    Wraps the decorated function so that:
+
+    * If ``rotor_dynamics=False`` and the caller passes ``rotor_vel``, a
+      ``ValueError`` is raised immediately.
+    * If ``rotor_dynamics=True`` and the caller omits ``rotor_vel``, a
+      ``UserWarning`` is issued and the commanded value is used directly.
+
+    The decorator also attaches a ``__drone_model_features__`` attribute to the
+    wrapper, which :func:`~drone_models.model_features` reads.
+
+    Args:
+        rotor_dynamics: Whether the decorated function models rotor velocity
+            dynamics. Set to ``False`` for models that do not accept or integrate
+            ``rotor_vel`` (e.g. ``so_rpy``). Defaults to ``True``.
+
+    Returns:
+        A decorator that wraps the dynamics function with the capability checks
+        described above.
+    """
 
     def decorator(fn: F) -> F:
         @wraps(fn)
@@ -96,15 +116,35 @@ def parametrize(
 
 
 def load_params(physics: str, drone_model: str, xp: ModuleType | None = None) -> dict:
-    """TODO.
+    """Load and merge physical and model-specific parameters for a drone configuration.
+
+    Reads parameters from two TOML files:
+
+    * ``drone_models/data/params.toml`` — physical parameters shared across all
+      models (mass, inertia, thrust curves, …).
+    * ``drone_models/<physics>/params.toml`` — model-specific coefficients
+      (e.g. fitted RPY coefficients for ``so_rpy``).
+
+    The two dicts are merged (model-specific values take precedence), and
+    ``J_inv`` is computed from ``J`` and added to the result.
 
     Args:
-        physics: _description_
-        drone_model: _description_
-        xp: The array API module to use. If not provided, numpy is used.
+        physics: Name of the model sub-package, e.g. ``"first_principles"``,
+            ``"so_rpy"``, ``"so_rpy_rotor"``, or ``"so_rpy_rotor_drag"``.
+        drone_model: Name of the drone configuration, e.g. ``"cf2x_L250"``.
+            Must exist as a section in both TOML files.
+        xp: Array API module used to convert parameter values. If ``None``,
+            NumPy is used.
 
     Returns:
-        dict[str, Array]: _description_
+        A flat dict mapping parameter names to arrays (or scalars) in the
+        requested array namespace.  Always contains at least ``mass``, ``J``,
+        ``J_inv``, ``gravity_vec``, and the model-specific coefficients for
+        ``physics``.
+
+    Raises:
+        KeyError: If ``drone_model`` is not found in either TOML file, or if
+            ``physics`` does not correspond to a known sub-package.
     """
     xp = np if xp is None else xp
     with open(Path(__file__).parent / "data/params.toml", "rb") as f:

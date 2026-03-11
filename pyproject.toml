@@ -130,13 +130,16 @@ array-api-strict = ">=2.4.1"
 
 [tool.pixi.feature.tests.pypi-dependencies]
 jax = ">=0.7.0"
+pytest-markdown-docs = "*"
 
 [tool.pixi.feature.tests.tasks]
 tests = { cmd = "pytest -v tests", description = "Run tests" }
+test-docs = { cmd = "pytest --doctest-modules drone_models/ --markdown-docs docs/", description = "Run doctests for docstrings and documentation" }
 
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"
 mkdocs-material = "*"
+click = "8.2.1.*"  # https://github.com/mkdocs/mkdocs/issues/4032
 
 [tool.pixi.feature.docs.pypi-dependencies]
 mkdocstrings = { version = "*", extras = ["python"] }

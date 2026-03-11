@@ -33,7 +33,23 @@ def motor_force2rotor_vel(motor_forces: Array, rpm2thrust: Array) -> Array:
 
 
 def rotor_vel2body_force(rotor_vel: Array, rpm2thrust: Array) -> Array:
-    """Convert rotor velocities to motor forces."""
+    """Compute the total thrust force vector in the body frame from motor RPMs.
+
+    The thrust from each motor is computed with the quadratic polynomial
+    ``f = a + b * rpm + c * rpm²`` defined by ``rpm2thrust``, then summed and
+    placed in the z-component of a 3-D body-frame force vector.  For a level
+    drone all thrust acts along the body z-axis.
+
+    Args:
+        rotor_vel: Motor angular velocities in RPM with shape ``(..., N)``
+            where ``N`` is the number of motors.
+        rpm2thrust: Polynomial coefficients ``[a, b, c]`` for the thrust curve
+            ``f = a + b * rpm + c * rpm²``.  Shape ``(3,)``.
+
+    Returns:
+        Body-frame force vector with shape ``(..., 3)``.  Only the z-component
+        is non-zero.
+    """
     xp = array_namespace(rotor_vel)
     body_force = xp.zeros(rotor_vel.shape[:-1] + (3,), dtype=rotor_vel.dtype)
     body_force = xpx.at(body_force)[..., 2].set(
@@ -48,7 +64,29 @@ def rotor_vel2body_force(rotor_vel: Array, rpm2thrust: Array) -> Array:
 def rotor_vel2body_torque(
     rotor_vel: Array, rpm2thrust: Array, rpm2torque: Array, L: float | Array, mixing_matrix: Array
 ) -> Array:
-    """Convert rotor velocities to motor torques."""
+    """Compute the total body torque from motor RPMs.
+
+    Combines two torque contributions:
+
+    * **Thrust torques** (roll and pitch): differential thrust across motors,
+      scaled by the arm length ``L`` and the ``mixing_matrix``.
+    * **Reaction torques** (yaw): aerodynamic drag torque from each propeller,
+      computed with the polynomial ``τ = a + b * rpm + c * rpm²`` defined by
+      ``rpm2torque``, then combined via the ``mixing_matrix``.
+
+    Args:
+        rotor_vel: Motor angular velocities in RPM with shape ``(..., N)``.
+        rpm2thrust: Polynomial coefficients ``[a, b, c]`` for the thrust curve.
+            Shape ``(3,)``.
+        rpm2torque: Polynomial coefficients ``[a, b, c]`` for the drag torque
+            curve ``τ = a + b * rpm + c * rpm²``.  Shape ``(3,)``.
+        L: Distance from the centre of mass to each motor in metres.
+        mixing_matrix: Matrix of shape ``(3, N)`` whose columns describe the
+            roll/pitch/yaw contribution of each motor.
+
+    Returns:
+        Body-frame torque vector with shape ``(..., 3)``.
+    """
     xp = array_namespace(rotor_vel)
     forces = rpm2thrust[..., 0] + rpm2thrust[..., 1] * rotor_vel + rpm2thrust[..., 2] * rotor_vel**2
     torques_xy = (

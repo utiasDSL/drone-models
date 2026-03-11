@@ -1,4 +1,15 @@
-"""TODO."""
+"""Second-order fitted RPY dynamics model (no rotor dynamics).
+
+This module implements a simplified quadrotor dynamics model where the rotational
+dynamics are modelled as a fitted second-order linear system driven by roll, pitch,
+and yaw (RPY) commands, and the translational dynamics are driven by the collective
+thrust command.  No motor spin-up dynamics are modelled.
+
+The command interface is ``[roll_rad, pitch_rad, yaw_rad, thrust_N]``.
+
+Both a numeric implementation (:func:`dynamics`) and symbolic CasADi implementations
+(:func:`symbolic_dynamics`, :func:`symbolic_dynamics_euler`) are provided.
+"""
 
 from __future__ import annotations
 
@@ -122,11 +133,35 @@ def symbolic_dynamics(
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
-    """Fitted model with linear, second order rpy dynamics.
+    """Return CasADi symbolic expressions for the so_rpy model in quaternion form.
 
-    For info on the args, see above.
+    Internally delegates to :func:`symbolic_dynamics_euler` and converts the
+    Euler-angle state to quaternion + angular-velocity state so that the
+    interface matches that of :func:`~drone_models.first_principles.symbolic_dynamics`.
 
-    This wrapper converts the actual symbolic model, defined below, into the quat and ang_vel form.
+    Args:
+        model_rotor_vel: If ``True``, a scalar rotor-velocity state is appended
+            to ``X`` (for interface compatibility only — ``so_rpy`` has no thrust
+            dynamics and will log a warning).  Defaults to ``False``.
+        model_dist_f: If ``True``, a 3-D force disturbance is appended to ``X``.
+        model_dist_t: If ``True``, a 3-D torque disturbance is appended to ``X``.
+        mass: Drone mass in kg.
+        gravity_vec: Gravity vector, shape ``(3,)``.
+        J: Inertia matrix, shape ``(3, 3)``.
+        J_inv: Inverse inertia matrix, shape ``(3, 3)``.
+        acc_coef: Scalar acceleration offset coefficient.
+        cmd_f_coef: Collective-thrust-to-acceleration coefficient.
+        rpy_coef: RPY state feedback coefficient, shape ``(3,)``.
+        rpy_rates_coef: RPY-rate feedback coefficient, shape ``(3,)``.
+        cmd_rpy_coef: RPY command feedforward coefficient, shape ``(3,)``.
+
+    Returns:
+        Tuple ``(X_dot, X, U, Y)`` of CasADi ``MX`` expressions:
+
+        * ``X_dot``: State derivative, length 13 (or more with disturbance states).
+        * ``X``: State vector ``[pos(3), quat(4), vel(3), ang_vel(3)]``.
+        * ``U``: Input vector ``[roll_rad, pitch_rad, yaw_rad, thrust_N]``.
+        * ``Y``: Output ``[pos(3), quat(4)]``.
     """
     # We need to set the rpy and drpy symbols before building the euler model
     symbols.rpy = rotation.cs_quat2euler(symbols.quat)
@@ -198,11 +233,32 @@ def symbolic_dynamics_euler(
     rpy_rates_coef: Array,
     cmd_rpy_coef: Array,
 ) -> tuple[cs.MX, cs.MX, cs.MX, cs.MX]:
-    """The fitted linear, second order rpy dynamics.
+    """Return CasADi symbolic expressions for the so_rpy model in Euler-angle form.
 
-    For info on the args, see above.
+    This is the native representation of the ``so_rpy`` model.  The state uses
+    roll/pitch/yaw and their rates rather than quaternion + angular velocity,
+    which avoids trigonometric overhead inside CasADi-based solvers.
 
-    This function returns the actual model, as defined in the paper, for direct use.
+    Args:
+        model_rotor_vel: If ``True``, a scalar rotor-velocity state is appended
+            to ``X`` for interface compatibility (no dynamics are modelled).
+        mass: Drone mass in kg.
+        gravity_vec: Gravity vector, shape ``(3,)``.
+        J: Inertia matrix, shape ``(3, 3)``.
+        J_inv: Inverse inertia matrix, shape ``(3, 3)``.
+        acc_coef: Scalar acceleration offset coefficient.
+        cmd_f_coef: Collective-thrust-to-acceleration coefficient.
+        rpy_coef: RPY state feedback coefficient, shape ``(3,)``.
+        rpy_rates_coef: RPY-rate feedback coefficient, shape ``(3,)``.
+        cmd_rpy_coef: RPY command feedforward coefficient, shape ``(3,)``.
+
+    Returns:
+        Tuple ``(X_dot, X, U, Y)`` of CasADi ``MX`` expressions:
+
+        * ``X_dot``: State derivative, length 12.
+        * ``X``: State vector ``[pos(3), rpy(3), vel(3), drpy(3)]``.
+        * ``U``: Input vector ``[roll_rad, pitch_rad, yaw_rad, thrust_N]``.
+        * ``Y``: Output ``[pos(3), rpy(3)]``.
     """
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.rpy, symbols.vel, symbols.drpy)

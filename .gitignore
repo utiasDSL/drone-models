@@ -8,3 +8,4 @@
 # pixi environments
 .pixi
 *.egg-info
+.claude
