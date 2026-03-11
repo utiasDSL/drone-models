@@ -138,7 +138,7 @@ pytest-markdown-docs = "*"
 
 [tool.pixi.feature.tests.tasks]
 tests = { cmd = "pytest -v tests", description = "Run tests" }
-test-docs = { cmd = "pytest --markdown-docs --markdown-docs-syntax=superfences drone_models/ docs/ --ignore=docs/gen_ref_pages.py", env = { SCIPY_ARRAY_API = "1" }, description = "Run doctests for docstrings and documentation" }
+test-docs = { cmd = "pytest -v --markdown-docs --markdown-docs-syntax=superfences drone_models/ docs/ --ignore=docs/gen_ref_pages.py", env = { SCIPY_ARRAY_API = "1" }, description = "Run doctests for docstrings and documentation" }
 
 [tool.pixi.feature.docs.dependencies]
 mkdocs = "*"

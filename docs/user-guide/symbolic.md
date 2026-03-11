@@ -75,10 +75,7 @@ State vector layout with `model_rotor_vel=True`:
 
 Both functions return raw CasADi expressions. Wrap them in a `cs.Function` to pass to any CasADi-based solver:
 
-!!! warning
-    This is currently broken. Investigate and fix the issue.
-
-```{ .python notest }
+```python
 import casadi as cs
 from drone_models.so_rpy_rotor_drag import symbolic_dynamics_euler
 from drone_models.core import parametrize

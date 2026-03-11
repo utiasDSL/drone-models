@@ -164,8 +164,12 @@ def symbolic_dynamics(
         * ``Y``: Output ``[pos(3), quat(4)]``.
     """
     # We need to set the rpy and drpy symbols before building the euler model
-    symbols.rpy = rotation.cs_quat2euler(symbols.quat)
-    symbols.drpy = rotation.cs_ang_vel2rpy_rates(symbols.quat, symbols.ang_vel)
+    _saved_rpy = symbols.rpy
+    _saved_drpy = symbols.drpy
+    _rpy_quat = rotation.cs_quat2euler(symbols.quat)
+    _drpy_quat = rotation.cs_ang_vel2rpy_rates(symbols.quat, symbols.ang_vel)
+    symbols.rpy = _rpy_quat
+    symbols.drpy = _drpy_quat
     X_dot_euler, X_euler, U_euler, Y_euler = symbolic_dynamics_euler(
         model_rotor_vel=model_rotor_vel,
         mass=mass,
@@ -178,6 +182,8 @@ def symbolic_dynamics(
         rpy_rates_coef=rpy_rates_coef,
         cmd_rpy_coef=cmd_rpy_coef,
     )
+    symbols.rpy = _saved_rpy
+    symbols.drpy = _saved_drpy
 
     # States and Inputs
     X = cs.vertcat(symbols.pos, symbols.quat, symbols.vel, symbols.ang_vel)
@@ -203,7 +209,7 @@ def symbolic_dynamics(
     )
     quat_dot = 0.5 * (xi @ symbols.quat)
     ang_vel_dot = rotation.cs_rpy_rates_deriv2ang_vel_deriv(
-        symbols.quat, symbols.drpy, X_dot_euler[9:12]
+        symbols.quat, _drpy_quat, X_dot_euler[9:12]
     )
     if model_dist_t:
         # adding torque disturbances to the state

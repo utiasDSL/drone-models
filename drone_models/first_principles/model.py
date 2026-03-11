@@ -231,6 +231,7 @@ def symbolic_dynamics(
             + rotor_dyn_coef[3] * (U**2 - symbols.rotor_vel**2),
         )
     else:
+        _saved_rotor_vel = symbols.rotor_vel
         symbols.rotor_vel = U
     # Creating force and torque vector
     forces_motor = (
@@ -281,4 +282,6 @@ def symbolic_dynamics(
         X_dot = cs.vertcat(pos_dot, quat_dot, vel_dot, ang_vel_dot)
     Y = cs.vertcat(symbols.pos, symbols.quat)
 
+    if not model_rotor_vel:
+        symbols.rotor_vel = _saved_rotor_vel
     return X_dot, X, U, Y
