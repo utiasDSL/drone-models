@@ -20,33 +20,23 @@ if TYPE_CHECKING:
 
 
 def ang_vel2quat_dot(quat: Array, ang_vel: Array) -> Array:
-    """Calculates the quaternion derivative based on an angular velocity."""
+    r"""Calculates the quaternion derivative (scalar-last [x, y, z, w]).
+
+    .. math::
+        \dot{\mathbf{q}} = \frac{1}{2} \mathbf{q} \otimes \begin{bmatrix}\mathbf{\omega} \\ 0 \end{bmatrix}
+    """
     xp = array_namespace(quat)
-    # Split angular velocity
-    x = ang_vel[..., 0:1]
-    y = ang_vel[..., 1:2]
-    z = ang_vel[..., 2:3]
-    # Skew-symmetric matrix
-    ang_vel_skew = xp.stack(
-        [
-            xp.concat((xp.zeros_like(x), -z, y), axis=-1),
-            xp.concat((z, xp.zeros_like(x), -x), axis=-1),
-            xp.concat((-y, x, xp.zeros_like(x)), axis=-1),
-        ],
-        axis=-2,
-    )
-    # First row of Xi
-    xi1 = xp.concat((xp.zeros_like(x), -ang_vel), axis=-1)
-    # Second to fourth rows of Xi
-    ang_vel_col = xp.expand_dims(ang_vel, axis=-1)  # (..., 3, 1)
-    xi2 = xp.concat((ang_vel_col, -ang_vel_skew), axis=-1)  # (..., 3, 4)
-    # Combine into Xi
-    xi1_exp = xp.expand_dims(xi1, axis=-2)  # (..., 1, 4)
-    xi = xp.concat((xi1_exp, xi2), axis=-2)  # (..., 4, 4)
-    # Quaternion derivative
-    quat_exp = xp.expand_dims(quat, axis=-1)  # (..., 4, 1)
-    result = 0.5 * xp.matmul(xi, quat_exp)  # (..., 4, 1)
-    return xp.squeeze(result, axis=-1)  # (..., 4)
+
+    x, y, z, w = quat[..., 0], quat[..., 1], quat[..., 2], quat[..., 3]
+    p, q, r = ang_vel[..., 0], ang_vel[..., 1], ang_vel[..., 2]
+
+    dot_x = w * p + y * r - z * q
+    dot_y = w * q + z * p - x * r
+    dot_z = w * r + x * q - y * p
+    dot_w = -x * p - y * q - z * r
+    dot_q = 0.5 * xp.stack([dot_x, dot_y, dot_z, dot_w], axis=-1)
+
+    return dot_q
 
 
 def ang_vel2rpy_rates(quat: Array, ang_vel: Array) -> Array:

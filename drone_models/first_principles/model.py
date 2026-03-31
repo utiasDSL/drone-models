@@ -74,9 +74,8 @@ def dynamics(
 ) -> tuple[Array, Array, Array, Array, Array | None]:
     r"""First principles model for a quatrotor.
 
-    The input consists of four forces in [N]. TODO more detail.
-
-    Based on the quaternion model from https://www.dynsyslab.org/wp-content/papercite-data/pdf/mckinnon-robot20.pdf
+    Based on the quaternion model from McKinnon (2020), but adapted for scalar last
+    https://www.dynsyslab.org/wp-content/papercite-data/pdf/mckinnon-robot20.pdf
 
     Args:
         pos: Position of the drone (m).
@@ -249,7 +248,7 @@ def symbolic_dynamics(
 
     # Rotational equation of motion
     xi = cs.vertcat(
-        cs.horzcat(0, -symbols.ang_vel.T), cs.horzcat(symbols.ang_vel, -cs.skew(symbols.ang_vel))
+        cs.horzcat(-cs.skew(symbols.ang_vel), symbols.ang_vel), cs.horzcat(-symbols.ang_vel.T, 0)
     )
     quat_dot = 0.5 * (xi @ symbols.quat)
     torques_sum = torques_motor_vec
